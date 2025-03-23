@@ -20,7 +20,7 @@ func NewCompute() Compute {
 func (c *compute) Parse(_ context.Context, queryStr string) (Query, error) {
 	parts := strings.Split(strings.TrimSpace(queryStr), " ")
 	if len(parts) == 0 {
-		return nil, fmt.Errorf("invalid commad")
+		return nil, fmt.Errorf("invalid command")
 	}
 
 	command := getCommand(parts[0])

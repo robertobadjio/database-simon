@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"concurrency/internal/database/storage/engine/memory"
 	"context"
 	"fmt"
 	"go.uber.org/zap"
@@ -11,13 +12,12 @@ import (
 	"concurrency/internal/database"
 	"concurrency/internal/database/compute"
 	"concurrency/internal/database/storage"
-	"concurrency/internal/database/storage/engine"
 )
 
 func main() {
 	ctx := context.Background()
 	comp := compute.NewCompute()
-	stor := storage.NewStorage(engine.NewMemory(1000))
+	stor := storage.NewStorage(memory.NewMemory())
 
 	logger, err := zap.NewProduction()
 	if err != nil {

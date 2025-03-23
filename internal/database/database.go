@@ -59,16 +59,25 @@ func (db *database) HandleQuery(ctx context.Context, queryStr string) (string, e
 }
 
 func (db *database) handlerSetQuery(ctx context.Context, query compute.Query) (string, error) {
-	db.stor.Set(ctx, query.Arguments()[0], query.Arguments()[1])
+	err := db.stor.Set(ctx, query.Arguments()[0], query.Arguments()[1])
+	if err != nil {
+		return "", err
+	}
 	return "", nil
 }
 
 func (db *database) handlerGetQuery(ctx context.Context, query compute.Query) (string, error) {
-	value := db.stor.Get(ctx, query.Arguments()[0])
+	value, err := db.stor.Get(ctx, query.Arguments()[0])
+	if err != nil {
+		return "", fmt.Errorf("error hadnle get query: %w", err)
+	}
 	return value, nil
 }
 
 func (db *database) handlerDelQuery(ctx context.Context, query compute.Query) (string, error) {
-	db.stor.Del(ctx, query.Arguments()[0])
+	err := db.stor.Del(ctx, query.Arguments()[0])
+	if err != nil {
+		return "", err
+	}
 	return "", nil
 }

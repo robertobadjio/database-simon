@@ -41,9 +41,11 @@ func (m *MockStorage) EXPECT() *MockStorageMockRecorder {
 }
 
 // Del mocks base method.
-func (m *MockStorage) Del(arg0 context.Context, arg1 string) {
+func (m *MockStorage) Del(arg0 context.Context, arg1 string) error {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Del", arg0, arg1)
+	ret := m.ctrl.Call(m, "Del", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // Del indicates an expected call of Del.
@@ -53,11 +55,12 @@ func (mr *MockStorageMockRecorder) Del(arg0, arg1 any) *gomock.Call {
 }
 
 // Get mocks base method.
-func (m *MockStorage) Get(arg0 context.Context, arg1 string) string {
+func (m *MockStorage) Get(arg0 context.Context, arg1 string) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", arg0, arg1)
 	ret0, _ := ret[0].(string)
-	return ret0
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
@@ -67,9 +70,11 @@ func (mr *MockStorageMockRecorder) Get(arg0, arg1 any) *gomock.Call {
 }
 
 // Set mocks base method.
-func (m *MockStorage) Set(arg0 context.Context, arg1, arg2 string) {
+func (m *MockStorage) Set(arg0 context.Context, arg1, arg2 string) error {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Set", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "Set", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // Set indicates an expected call of Set.
