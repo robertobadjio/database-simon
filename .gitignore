@@ -1,0 +1,7 @@
+.idea/
+.env
+
+c.out
+
+bin/*
+!bin/.gitkeep
