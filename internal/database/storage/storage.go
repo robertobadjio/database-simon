@@ -7,6 +7,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// Storage ...
 type Storage interface {
 	Set(context.Context, string, string) error
 	Get(context.Context, string) (string, error)
@@ -18,6 +19,7 @@ type storage struct {
 	logger *zap.Logger
 }
 
+// NewStorage ...
 func NewStorage(engine Engine, logger *zap.Logger) (Storage, error) {
 	if engine == nil {
 		return nil, fmt.Errorf("engine must be set")
@@ -33,11 +35,13 @@ func NewStorage(engine Engine, logger *zap.Logger) (Storage, error) {
 	}, nil
 }
 
+// Set ...
 func (s *storage) Set(ctx context.Context, key, value string) error {
 	s.engine.Set(ctx, key, value)
 	return nil
 }
 
+// Get ...
 func (s *storage) Get(ctx context.Context, key string) (string, error) {
 	val, found := s.engine.Get(ctx, key)
 	if !found {
@@ -47,6 +51,7 @@ func (s *storage) Get(ctx context.Context, key string) (string, error) {
 	return val, nil
 }
 
+// Del ...
 func (s *storage) Del(ctx context.Context, key string) error {
 	s.engine.Del(ctx, key)
 	return nil

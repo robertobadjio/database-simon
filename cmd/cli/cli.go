@@ -2,16 +2,17 @@ package main
 
 import (
 	"bufio"
-	"concurrency/internal/database/storage/engine/memory"
 	"context"
 	"fmt"
-	"go.uber.org/zap"
 	"log"
 	"os"
+
+	"go.uber.org/zap"
 
 	"concurrency/internal/database"
 	"concurrency/internal/database/compute"
 	"concurrency/internal/database/storage"
+	"concurrency/internal/database/storage/engine/memory"
 )
 
 func main() {
@@ -25,7 +26,12 @@ func main() {
 	}()
 
 	comp := compute.NewCompute()
-	stor, err := storage.NewStorage(memory.NewMemory(), logger)
+	memoryEngine, err := memory.NewMemory(logger)
+	if err != nil {
+		log.Fatal("init memory engine error")
+	}
+
+	stor, err := storage.NewStorage(memoryEngine, logger)
 	if err != nil {
 		log.Fatal("init storage error")
 	}
@@ -46,7 +52,7 @@ func main() {
 
 		res, err := db.HandleQuery(ctx, queryRaw)
 		if err != nil {
-			fmt.Printf("Error handle command: %s\n" + err.Error())
+			fmt.Printf("Error handle command: %s\n", err.Error())
 			continue
 		}
 

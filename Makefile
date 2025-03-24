@@ -6,7 +6,32 @@ export GOOS=linux
 export GOARCH=amd64
 
 GO_TEST_COMMAND = go test
+TEST_COVER_FILENAME = c.out
 
+help: ## Help
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(firstword $(MAKEFILE_LIST)) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+
+install-deps-linux: ## Install dependencies for Linux
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s v1.64.5
+
+fmt: ## Automatically format source code
+	go fmt ./...
+.PHONY:fmt
+
+lint: fmt lint-config-verify ## Check code (lint)
+	./bin/golangci-lint run ./... --config .golangci.pipeline.yaml
+.PHONY:lint
+
+lint-config-verify: fmt ## Verify config (lint)
+	./bin/golangci-lint config verify --config .golangci.pipeline.yaml
+
+vet: fmt ## Check code (vet)
+	go vet ./...
+.PHONY:vet
+
+vet-shadow: fmt ## Check code with detect shadow (vet)
+	go vet -vettool=$(which shadow) ./...
+.PHONY:vet
 
 mockgen: ## Run mockgen
 	# go install go.uber.org/mock/mockgen@latest
@@ -17,7 +42,7 @@ mockgen: ## Run mockgen
 
 test-unit: ## Run unit tests
 	$(GO_TEST_COMMAND) \
-		./internal/...
+		./internal/... \
 		-count=1 \
 		-cover -coverprofile=$(TEST_COVER_FILENAME)
 

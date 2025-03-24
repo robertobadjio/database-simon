@@ -6,6 +6,7 @@ import (
 	"strings"
 )
 
+// Compute ...
 type Compute interface {
 	Parse(ctx context.Context, query string) (Query, error)
 }
@@ -13,10 +14,12 @@ type Compute interface {
 type compute struct {
 }
 
+// NewCompute ...
 func NewCompute() Compute {
 	return &compute{}
 }
 
+// Parse ...
 func (c *compute) Parse(_ context.Context, queryStr string) (Query, error) {
 	parts := strings.Split(strings.TrimSpace(queryStr), " ")
 	if len(parts) == 0 {

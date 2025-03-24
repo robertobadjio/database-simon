@@ -2,28 +2,42 @@ package memory
 
 import (
 	"context"
+	"fmt"
+
+	"go.uber.org/zap"
 
 	"concurrency/internal/database/storage"
 )
 
+// Memory ...
 type Memory struct {
 	hashTable *HashTable
+	logger    *zap.Logger
 }
 
-func NewMemory() storage.Engine {
+// NewMemory ...
+func NewMemory(logger *zap.Logger) (storage.Engine, error) {
+	if logger == nil {
+		return nil, fmt.Errorf("logger must be set")
+	}
+
 	return &Memory{
 		hashTable: NewHashTable(),
-	}
+		logger:    logger,
+	}, nil
 }
 
-func (m *Memory) Set(ctx context.Context, key, value string) {
+// Set ...
+func (m *Memory) Set(_ context.Context, key, value string) {
 	m.hashTable.Set(key, value)
 }
 
-func (m *Memory) Get(ctx context.Context, key string) (string, bool) {
+// Get ...
+func (m *Memory) Get(_ context.Context, key string) (string, bool) {
 	return m.hashTable.Get(key)
 }
 
-func (m *Memory) Del(ctx context.Context, key string) {
+// Del ...
+func (m *Memory) Del(_ context.Context, key string) {
 	m.hashTable.Del(key)
 }

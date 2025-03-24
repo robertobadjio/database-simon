@@ -10,6 +10,7 @@ import (
 	"concurrency/internal/database/storage"
 )
 
+// Database ...
 type Database interface {
 	HandleQuery(ctx context.Context, queryStr string) (string, error)
 }
@@ -20,6 +21,7 @@ type database struct {
 	logger *zap.Logger
 }
 
+// NewDatabase ...
 func NewDatabase(logger *zap.Logger, comp compute.Compute, stor storage.Storage) (Database, error) {
 	if logger == nil {
 		return nil, fmt.Errorf("logger is invalid")

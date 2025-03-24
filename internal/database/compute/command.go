@@ -1,9 +1,13 @@
 package compute
 
 const (
-	SetCommand     = "SET"
-	GetCommand     = "GET"
-	DelCommand     = "DEL"
+	// SetCommand ...
+	SetCommand = "SET"
+	// GetCommand ...
+	GetCommand = "GET"
+	// DelCommand ...
+	DelCommand = "DEL"
+	// UnknownCommand ...
 	UnknownCommand = "UNKNOWN"
 )
 
