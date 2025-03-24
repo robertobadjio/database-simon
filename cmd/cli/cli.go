@@ -16,9 +16,6 @@ import (
 
 func main() {
 	ctx := context.Background()
-	comp := compute.NewCompute()
-	stor := storage.NewStorage(memory.NewMemory())
-
 	logger, err := zap.NewProduction()
 	if err != nil {
 		log.Fatal("init zap logger error")
@@ -26,6 +23,12 @@ func main() {
 	defer func() {
 		_ = logger.Sync()
 	}()
+
+	comp := compute.NewCompute()
+	stor, err := storage.NewStorage(memory.NewMemory(), logger)
+	if err != nil {
+		log.Fatal("init storage error")
+	}
 
 	db, err := database.NewDatabase(logger, comp, stor)
 	if err != nil {

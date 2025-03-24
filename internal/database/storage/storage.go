@@ -3,6 +3,8 @@ package storage
 import (
 	"context"
 	"fmt"
+
+	"go.uber.org/zap"
 )
 
 type Storage interface {
@@ -13,12 +15,22 @@ type Storage interface {
 
 type storage struct {
 	engine Engine
+	logger *zap.Logger
 }
 
-func NewStorage(engine Engine) Storage {
+func NewStorage(engine Engine, logger *zap.Logger) (Storage, error) {
+	if engine == nil {
+		return nil, fmt.Errorf("engine must be set")
+	}
+
+	if logger == nil {
+		return nil, fmt.Errorf("logger must be set")
+	}
+
 	return &storage{
 		engine: engine,
-	}
+		logger: logger,
+	}, nil
 }
 
 func (s *storage) Set(ctx context.Context, key, value string) error {
@@ -29,7 +41,7 @@ func (s *storage) Set(ctx context.Context, key, value string) error {
 func (s *storage) Get(ctx context.Context, key string) (string, error) {
 	val, found := s.engine.Get(ctx, key)
 	if !found {
-		return "", fmt.Errorf("not found") // TODO: custom error
+		return "", fmt.Errorf("not found")
 	}
 
 	return val, nil
