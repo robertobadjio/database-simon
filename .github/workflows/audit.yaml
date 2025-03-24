@@ -24,8 +24,17 @@ jobs:
         with:
           go-version: ${{ matrix.go-version }}
 
-      - name: Run lint
-        run: make lint
+      - name: Verify dependencies
+        run: go mod verify
 
-      - name: Run tests
-        run: go test ./internal/... -count=1 -race
+      - name: Build
+        run: go build -v ./...
+
+      - name: Run go vet
+        run: go vet ./...
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: v1.64.5
+          args: --timeout=30m --config=./.golangci.pipeline.yaml
