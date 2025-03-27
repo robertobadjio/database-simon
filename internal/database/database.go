@@ -45,7 +45,7 @@ func NewDatabase(logger *zap.Logger, comp compute.Compute, stor storage.Storage)
 func (db *database) HandleQuery(ctx context.Context, queryStr string) (string, error) {
 	query, err := db.comp.Parse(ctx, queryStr)
 	if err != nil {
-		return "", fmt.Errorf("error parsing")
+		return "", fmt.Errorf("error parsing: %w", err)
 	}
 
 	switch query.Command() {

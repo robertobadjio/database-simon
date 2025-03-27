@@ -69,7 +69,7 @@ func TestHashTableGet(t *testing.T) {
 		expectedValue string
 		found         bool
 	}{
-		"get not existing key": {
+		"get not-existing key": {
 			key:           "key_3",
 			found:         false,
 			expectedValue: "",
@@ -105,7 +105,7 @@ func TestHashTableDel(t *testing.T) {
 	tests := map[string]struct {
 		key string
 	}{
-		"del not existing key": {
+		"del not-existing key": {
 			key: "key_3",
 		},
 		"del existing key": {

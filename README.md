@@ -1,4 +1,4 @@
-# :cat2: Database Simon
+# :cat2: Simon Database
 
 <div align="center">
 
