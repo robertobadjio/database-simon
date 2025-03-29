@@ -65,9 +65,13 @@ func (sp *serviceProvider) Logger(_ context.Context) *zap.Logger {
 
 func (sp *serviceProvider) Config(_ context.Context) config.Config {
 	if sp.config == nil {
-		c, err := config.NewConfig()
+		c := config.NewConfig()
+
+		env := config.NewEnvironment()
+		configFileName := env.GetEnv(config.FileNameEnvName)
+		err := c.Load(configFileName, env)
 		if err != nil {
-			log.Fatal("init config error")
+			log.Fatal("load config error")
 		}
 
 		sp.config = c

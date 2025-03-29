@@ -8,12 +8,14 @@ import (
 	"time"
 )
 
+// TCPClient ...
 type TCPClient struct {
 	connection  net.Conn
 	idleTimeout time.Duration
 	bufferSize  int
 }
 
+// NewTCPClient ...
 func NewTCPClient(address string, options ...TCPClientOption) (*TCPClient, error) {
 	connection, err := net.Dial("tcp", address)
 	//defer connection.Close() // TODO: ?!
@@ -39,6 +41,7 @@ func NewTCPClient(address string, options ...TCPClientOption) (*TCPClient, error
 	return client, nil
 }
 
+// Send ...
 func (c *TCPClient) Send(request []byte) ([]byte, error) {
 	if _, err := c.connection.Write(request); err != nil {
 		return nil, err
@@ -55,6 +58,7 @@ func (c *TCPClient) Send(request []byte) ([]byte, error) {
 	return response[:count], nil
 }
 
+// Close ...
 func (c *TCPClient) Close() {
 	if c.connection != nil {
 		_ = c.connection.Close()

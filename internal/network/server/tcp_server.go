@@ -11,8 +11,10 @@ import (
 	"go.uber.org/zap"
 )
 
+// TCPHandler ...
 type TCPHandler = func(context.Context, []byte) []byte
 
+// TCPServer ...
 type TCPServer struct {
 	listener net.Listener
 
@@ -23,6 +25,7 @@ type TCPServer struct {
 	logger *zap.Logger
 }
 
+// NewTCPServer ...
 func NewTCPServer(address string, logger *zap.Logger, options ...TCPServerOption) (*TCPServer, error) {
 	if logger == nil {
 		return nil, errors.New("logger is invalid")
@@ -49,6 +52,7 @@ func NewTCPServer(address string, logger *zap.Logger, options ...TCPServerOption
 	return server, nil
 }
 
+// HandleQueries ...
 func (s *TCPServer) HandleQueries(ctx context.Context, handler TCPHandler) {
 	for {
 		connection, err := s.listener.Accept()

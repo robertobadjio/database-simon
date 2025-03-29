@@ -55,6 +55,7 @@ func TestNewDatabase(t *testing.T) {
 
 			stor, err := NewDatabase(test.logger, test.compute, test.storage)
 			assert.Equal(t, test.expectedErr, err)
+
 			if test.expectedNilObj {
 				assert.Nil(t, stor)
 			} else {

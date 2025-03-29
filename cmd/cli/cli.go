@@ -28,7 +28,7 @@ func main() {
 
 	var options []client.TCPClientOption
 	options = append(options, client.WithClientIdleTimeout(*idleTimeout))
-	options = append(options, client.WithClientBufferSize(uint(maxMessageSize)))
+	options = append(options, client.WithClientBufferSize(uint(maxMessageSize))) // nolint : G115: integer overflow conversion uint -> int
 
 	reader := bufio.NewReader(os.Stdin)
 	c, err := client.NewTCPClient(*address, options...)
@@ -56,6 +56,7 @@ func main() {
 	}
 }
 
+// ParseSize ...
 func ParseSize(text string) (int, error) {
 	if len(text) == 0 || text[0] < '0' || text[0] > '9' {
 		return 0, errors.New("incorrect size")

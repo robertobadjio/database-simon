@@ -2,21 +2,21 @@ package config
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net"
-	"os"
 	"time"
 
 	"gopkg.in/yaml.v3"
 )
 
-const configFileNameEnvName = "CONFIG_FILE_NAME"
+// FileNameEnvName ...
+const FileNameEnvName = "CONFIG_FILE_NAME"
 
+// Config ...
 type Config interface {
 	TCPAddress() string
+	Load(string, OS) error
 }
 
 type config struct {
@@ -37,40 +37,31 @@ func (cfg *config) TCPAddress() string {
 	return net.JoinHostPort(cfg.TCPConfig.Host, cfg.TCPConfig.Port)
 }
 
-func NewConfig() (Config, error) {
-	configFileName := os.Getenv(configFileNameEnvName)
-	if len(configFileName) != 0 {
-		data, err := os.ReadFile(configFileName)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		reader := bytes.NewReader(data)
-		cfg, err := load(reader)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		return cfg, nil
-	}
-
-	return &config{}, nil
+// NewConfig ...
+func NewConfig() Config {
+	return &config{}
 }
 
-func load(reader io.Reader) (Config, error) {
+// Load ...
+func (cfg *config) Load(configFileName string, osCustom OS) error {
+	dataRaw, err := osCustom.ReadFile(configFileName)
+	if err != nil {
+		return fmt.Errorf("error reading file: %w", err)
+	}
+
+	reader := bytes.NewReader(dataRaw)
 	if reader == nil {
-		return nil, errors.New("incorrect reader")
+		return fmt.Errorf("incorrect reader")
 	}
 
 	data, err := io.ReadAll(reader)
 	if err != nil {
-		return nil, errors.New("failed to read buffer")
+		return fmt.Errorf("failed to read buffer: %w", err)
 	}
 
-	var c config
-	if err = yaml.Unmarshal(data, &c); err != nil {
-		return nil, fmt.Errorf("failed to parse config: %w", err)
+	if err = yaml.Unmarshal(data, &cfg); err != nil {
+		return fmt.Errorf("failed to parse config: %w", err)
 	}
 
-	return &c, nil
+	return nil
 }

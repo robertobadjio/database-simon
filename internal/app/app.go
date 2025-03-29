@@ -3,8 +3,9 @@ package app
 import (
 	"context"
 	"fmt"
-	"golang.org/x/sync/errgroup"
 	"log"
+
+	"golang.org/x/sync/errgroup"
 )
 
 // App ...
@@ -54,8 +55,8 @@ func (a *App) Run(ctx context.Context) error {
 
 	group.Go(func() error {
 		a.serviceProvider.Network(ctx).HandleQueries(groupCtx, func(ctx context.Context, query []byte) []byte {
-			response, err := a.serviceProvider.Database(ctx).HandleQuery(ctx, string(query))
-			if err != nil {
+			response, errDB := a.serviceProvider.Database(ctx).HandleQuery(ctx, string(query))
+			if errDB != nil {
 				fmt.Println("ERROR", err.Error()) // TODO: ?!
 			}
 
