@@ -1,7 +1,6 @@
 package app
 
 import (
-	"concurrency/internal/network/server"
 	"context"
 	"fmt"
 	"log"
@@ -13,6 +12,7 @@ import (
 	"concurrency/internal/database/compute"
 	"concurrency/internal/database/storage"
 	"concurrency/internal/database/storage/engine/memory"
+	"concurrency/internal/network/server"
 )
 
 type serviceProvider struct {
