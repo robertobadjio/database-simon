@@ -2,15 +2,18 @@ package main
 
 import (
 	"context"
+	"flag"
 	"log"
 
-	"concurrency/internal/app"
+	"database-simon/internal/app"
 )
 
 func main() {
 	ctx := context.Background()
 
-	a, err := app.NewApp(ctx)
+	config := flag.String("config", "./config.yml", "Server config")
+
+	a, err := app.NewApp(ctx, *config)
 	if err != nil {
 		log.Fatal("app", "init", "msg", "failed to init app", "err", err.Error())
 	}

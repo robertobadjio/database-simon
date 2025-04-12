@@ -2,6 +2,7 @@ package memory
 
 import (
 	"context"
+	"database-simon/internal/common"
 	"errors"
 	"testing"
 
@@ -9,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"concurrency/internal/database/storage"
+	"database-simon/internal/database/storage"
 )
 
 func TestNewMemory(t *testing.T) {
@@ -71,7 +72,8 @@ func TestEngineSet(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			ctx := context.Background()
+			const txID int64 = 1
+			ctx := common.ContextWithTxID(context.Background(), txID)
 
 			test.engine.Set(ctx, test.key, test.value)
 			value, found := test.engine.Get(ctx, test.key)
@@ -102,7 +104,8 @@ func TestEngineGet(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			ctx := context.Background()
+			const txID int64 = 1
+			ctx := common.ContextWithTxID(context.Background(), txID)
 
 			value, found := test.engine.Get(ctx, test.key)
 			assert.False(t, found)
@@ -122,6 +125,7 @@ func TestEngineDel(t *testing.T) {
 			engine: func() storage.Engine {
 				engine, err := NewMemory(zap.NewNop())
 				require.NoError(t, err)
+
 				return engine
 			}(),
 			key: "key",
@@ -132,7 +136,8 @@ func TestEngineDel(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			ctx := context.Background()
+			const txID int64 = 1
+			ctx := common.ContextWithTxID(context.Background(), txID)
 
 			test.engine.Del(ctx, test.key)
 			value, found := test.engine.Get(ctx, test.key)

@@ -11,7 +11,7 @@ TEST_COVER_FILENAME = c.out
 help: ## Help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(firstword $(MAKEFILE_LIST)) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-install-deps-linux: ## Install dependencies for Linux
+install-deps: ## Install dependencies
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s v1.64.5
 
 fmt: ## Automatically format source code

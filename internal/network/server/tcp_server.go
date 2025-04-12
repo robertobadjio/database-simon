@@ -2,10 +2,12 @@ package server
 
 import (
 	"context"
+	"database-simon/internal/concurrency"
 	"errors"
 	"fmt"
 	"io"
 	"net"
+	"sync"
 	"time"
 
 	"go.uber.org/zap"
@@ -17,6 +19,8 @@ type TCPHandler = func(context.Context, []byte) []byte
 // TCPServer ...
 type TCPServer struct {
 	listener net.Listener
+
+	semaphore concurrency.Semaphore
 
 	idleTimeout    time.Duration
 	bufferSize     int
@@ -54,19 +58,35 @@ func NewTCPServer(address string, logger *zap.Logger, options ...TCPServerOption
 
 // HandleQueries ...
 func (s *TCPServer) HandleQueries(ctx context.Context, handler TCPHandler) {
-	for {
-		connection, err := s.listener.Accept()
-		if err != nil {
-			if errors.Is(err, net.ErrClosed) {
-				return
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	go func() {
+		defer wg.Done()
+
+		for {
+			connection, err := s.listener.Accept()
+			if err != nil {
+				if errors.Is(err, net.ErrClosed) {
+					return
+				}
+
+				s.logger.Error("failed to accept", zap.Error(err))
+				continue
 			}
 
-			s.logger.Error("failed to accept", zap.Error(err))
-			continue
+			s.semaphore.Acquire()
+			go func(connection net.Conn) {
+				defer s.semaphore.Release()
+				s.handleConnection(ctx, connection, handler)
+			}(connection)
 		}
+	}()
 
-		go s.handleConnection(ctx, connection, handler)
-	}
+	<-ctx.Done()
+	s.listener.Close() // TODO: Handle error
+
+	wg.Wait() // don't wait for connections to complete
 }
 
 func (s *TCPServer) handleConnection(ctx context.Context, connection net.Conn, handler TCPHandler) {

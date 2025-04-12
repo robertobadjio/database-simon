@@ -15,6 +15,11 @@ network:
   max_connections: 100
   max_message_size: "4KB"
   idle_timeout: 5m
+wal:
+  flushing_batch_size: 100
+  flushing_batch_timeout: "10ms"
+  max_segment_size: "10MB"
+  data_directory: "./data/wal"
 `
 
 func TestNewConfig(t *testing.T) {
@@ -70,6 +75,12 @@ func TestLoadConfig(t *testing.T) {
 					MaxConnections: 100,
 					MaxMessageSize: "4KB",
 					IdleTimeout:    time.Minute * 5,
+				},
+				&WAL{
+					FlushingBatchSize:    100,
+					FlushingBatchTimeout: 10 * time.Millisecond,
+					MaxSegmentSize:       "10MB",
+					DataDirectory:        "./data/wal",
 				},
 			},
 		},

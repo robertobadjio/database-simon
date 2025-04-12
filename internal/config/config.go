@@ -10,17 +10,16 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// FileNameEnvName ...
-const FileNameEnvName = "CONFIG_FILE_NAME"
-
 // Config ...
 type Config interface {
 	TCPAddress() string
+	WALS() *WAL
 	Load(string, OS) error
 }
 
 type config struct {
 	TCPConfig *TCPConfig `yaml:"network"`
+	WAL       *WAL       `yaml:"wal"`
 }
 
 // TCPConfig ...
@@ -30,6 +29,19 @@ type TCPConfig struct {
 	MaxConnections int           `yaml:"max_connections"`
 	MaxMessageSize string        `yaml:"max_message_size"`
 	IdleTimeout    time.Duration `yaml:"idle_timeout"`
+}
+
+// WAL ...
+type WAL struct {
+	FlushingBatchSize    int           `yaml:"flushing_batch_size"`
+	FlushingBatchTimeout time.Duration `yaml:"flushing_batch_timeout"`
+	MaxSegmentSize       string        `yaml:"max_segment_size"`
+	DataDirectory        string        `yaml:"data_directory"`
+}
+
+// WALS ...
+func (cfg *config) WALS() *WAL {
+	return cfg.WAL
 }
 
 // TCPAddress ...

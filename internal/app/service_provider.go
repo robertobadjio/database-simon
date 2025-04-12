@@ -2,30 +2,42 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
+	"time"
 
 	"go.uber.org/zap"
 
-	"concurrency/internal/config"
-	"concurrency/internal/database"
-	"concurrency/internal/database/compute"
-	"concurrency/internal/database/storage"
-	"concurrency/internal/database/storage/engine/memory"
-	"concurrency/internal/network/server"
+	"database-simon/internal/common"
+	"database-simon/internal/config"
+	"database-simon/internal/database"
+	"database-simon/internal/database/compute"
+	"database-simon/internal/database/filesystem"
+	"database-simon/internal/database/storage"
+	"database-simon/internal/database/storage/engine/memory"
+	"database-simon/internal/database/storage/wal"
+	"database-simon/internal/network/server"
 )
 
 type serviceProvider struct {
 	logger *zap.Logger
 
+	wal      wal.WAL
 	database database.Database
 
-	config  config.Config
+	configFileName string
+	config         config.Config
+
 	network *server.TCPServer
 }
 
-func newServiceProvider() *serviceProvider {
-	return &serviceProvider{}
+func newServiceProvider(configFileName string) (*serviceProvider, error) {
+	if configFileName == "" {
+		return nil, errors.New("config file name is required")
+	}
+
+	return &serviceProvider{configFileName: configFileName}, nil
 }
 
 func (sp *serviceProvider) Database(ctx context.Context) database.Database {
@@ -68,10 +80,9 @@ func (sp *serviceProvider) Config(_ context.Context) config.Config {
 		c := config.NewConfig()
 
 		env := config.NewEnvironment()
-		configFileName := env.GetEnv(config.FileNameEnvName)
-		err := c.Load(configFileName, env)
+		err := c.Load(sp.configFileName, env)
 		if err != nil {
-			log.Fatal("load config error")
+			log.Fatal(fmt.Sprintf("load config error: %s", err.Error()))
 		}
 
 		sp.config = c
@@ -84,7 +95,7 @@ func (sp *serviceProvider) Network(ctx context.Context) *server.TCPServer {
 	if sp.network == nil {
 		var options []server.TCPServerOption
 		var err error
-		fmt.Println(sp.Config(ctx).TCPAddress())
+		fmt.Println(sp.Config(ctx).TCPAddress()) // TODO: !
 		sp.network, err = server.NewTCPServer(sp.Config(ctx).TCPAddress(), sp.Logger(ctx), options...)
 		if err != nil {
 			log.Fatal("init network error")
@@ -92,4 +103,62 @@ func (sp *serviceProvider) Network(ctx context.Context) *server.TCPServer {
 	}
 
 	return sp.network
+}
+
+const (
+	defaultFlushingBatchSize    = 100
+	defaultFlushingBatchTimeout = time.Millisecond * 10
+	defaultMaxSegmentSize       = 10 << 20
+	defaultWALDataDirectory     = "./data/wal"
+)
+
+func (sp *serviceProvider) WAL(ctx context.Context) wal.WAL {
+	if sp.wal == nil {
+		flushingBatchSize := defaultFlushingBatchSize
+		flushingBatchTimeout := defaultFlushingBatchTimeout
+		maxSegmentSize := defaultMaxSegmentSize
+		dataDirectory := defaultWALDataDirectory
+
+		if sp.Config(ctx).WALS().FlushingBatchSize != 0 {
+			flushingBatchSize = sp.Config(ctx).WALS().FlushingBatchSize
+		}
+
+		if sp.Config(ctx).WALS().FlushingBatchTimeout != 0 {
+			flushingBatchTimeout = sp.Config(ctx).WALS().FlushingBatchTimeout
+		}
+
+		if sp.Config(ctx).WALS().MaxSegmentSize != "" {
+			size, err := common.ParseSize(sp.Config(ctx).WALS().MaxSegmentSize)
+			if err != nil {
+				log.Fatal(errors.New("max segment size is incorrect"))
+			}
+
+			maxSegmentSize = size
+		}
+
+		if sp.Config(ctx).WALS().DataDirectory != "" {
+			dataDirectory = sp.Config(ctx).WALS().DataDirectory
+		}
+
+		segmentsDirectory := filesystem.NewSegmentsDirectory(dataDirectory)
+		reader, err := wal.NewLogsReader(segmentsDirectory)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		segment := filesystem.NewSegment(dataDirectory, maxSegmentSize)
+		writer, err := wal.NewLogsWriter(segment, sp.Logger(ctx))
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		w, err := wal.NewWAL(writer, reader, flushingBatchTimeout, flushingBatchSize)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		sp.wal = w
+	}
+
+	return sp.wal
 }

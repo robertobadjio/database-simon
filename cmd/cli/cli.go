@@ -11,7 +11,8 @@ import (
 
 	"go.uber.org/zap"
 
-	"concurrency/internal/network/client"
+	"database-simon/internal/common"
+	"database-simon/internal/network/client"
 )
 
 func main() {
@@ -21,7 +22,7 @@ func main() {
 	flag.Parse()
 
 	logger, _ := zap.NewProduction()
-	maxMessageSize, err := ParseSize(*maxMessageSizeStr)
+	maxMessageSize, err := common.ParseSize(*maxMessageSizeStr)
 	if err != nil {
 		logger.Fatal("failed to parse max message size", zap.Error(err))
 	}
@@ -53,34 +54,5 @@ func main() {
 		}
 
 		fmt.Println(string(response))
-	}
-}
-
-// ParseSize ...
-func ParseSize(text string) (int, error) {
-	if len(text) == 0 || text[0] < '0' || text[0] > '9' {
-		return 0, errors.New("incorrect size")
-	}
-
-	idx := 0
-	size := 0
-	for idx < len(text) && text[idx] >= '0' && text[idx] <= '9' {
-		number := int(text[idx] - '0')
-		size = size*10 + number
-		idx++
-	}
-
-	parameter := text[idx:]
-	switch parameter {
-	case "GB", "Gb", "gb":
-		return size << 30, nil
-	case "MB", "Mb", "mb":
-		return size << 20, nil
-	case "KB", "Kb", "kb":
-		return size << 10, nil
-	case "B", "b", "":
-		return size, nil
-	default:
-		return 0, errors.New("incorrect size")
 	}
 }

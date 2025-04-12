@@ -6,8 +6,8 @@ import (
 
 	"go.uber.org/zap"
 
-	"concurrency/internal/database/compute"
-	"concurrency/internal/database/storage"
+	"database-simon/internal/database/compute"
+	"database-simon/internal/database/storage"
 )
 
 // Database ...

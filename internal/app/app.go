@@ -11,11 +11,14 @@ import (
 // App ...
 type App struct {
 	serviceProvider *serviceProvider
+	configFileName  string
 }
 
 // NewApp ...
-func NewApp(ctx context.Context) (*App, error) {
-	a := &App{}
+func NewApp(ctx context.Context, configFileName string) (*App, error) {
+	a := &App{
+		configFileName: configFileName,
+	}
 
 	err := a.initDeps(ctx)
 	if err != nil {
@@ -42,7 +45,12 @@ func (a *App) initDeps(ctx context.Context) error {
 }
 
 func (a *App) initServiceProvider(_ context.Context) error {
-	a.serviceProvider = newServiceProvider()
+	var err error
+	a.serviceProvider, err = newServiceProvider(a.configFileName)
+	if err != nil {
+		return fmt.Errorf("init-serviceProvider: %w", err)
+	}
+
 	return nil
 }
 
