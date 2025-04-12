@@ -84,7 +84,10 @@ func (s *TCPServer) HandleQueries(ctx context.Context, handler TCPHandler) {
 	}()
 
 	<-ctx.Done()
-	s.listener.Close() // TODO: Handle error
+
+	if err := s.listener.Close(); err != nil {
+		s.logger.Error("failed to close listener:", zap.Error(err))
+	}
 
 	wg.Wait() // don't wait for connections to complete
 }
