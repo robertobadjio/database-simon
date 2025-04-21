@@ -2,7 +2,7 @@
 .DEFAULT_GOAL := help
 .PHONY: help
 
-export GOOS=linux
+export GOOS=darwin
 export GOARCH=amd64
 
 GO_TEST_COMMAND = go test
@@ -39,14 +39,10 @@ mockgen: ## Run mockgen
 	mockgen -source=./internal/database/compute/compute.go -destination=./internal/database/compute/compute_mock.go -package=compute
 	mockgen -source=./internal/database/storage/storage.go -destination=./internal/database/storage/storage_mock.go -package=storage
 	mockgen -source=./internal/database/storage/engine.go -destination=./internal/database/storage/engine_mock.go -package=storage
-	mockgen -source=./internal/database/storage/engine.go -destination=./internal/database/storage/engine_mock.go -package=storage
 	mockgen -source=./internal/config/enviroment.go -destination=./internal/config/enviroment_mock.go -package=config
 
 test-unit: ## Run unit tests
-	$(GO_TEST_COMMAND) \
-		./internal/... \
-		-count=1 \
-		-cover -coverprofile=$(TEST_COVER_FILENAME)
+	$(GO_TEST_COMMAND) ./internal/... -count=1 -cover -coverprofile=$(TEST_COVER_FILENAME)
 
 test-unit-race: ## Run unit tests with -race flag
 	$(GO_TEST_COMMAND) ./internal/... -count=1 -race

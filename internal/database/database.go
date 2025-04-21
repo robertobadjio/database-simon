@@ -7,22 +7,27 @@ import (
 	"go.uber.org/zap"
 
 	"database-simon/internal/database/compute"
-	"database-simon/internal/database/storage"
 )
 
-// Database ...
-type Database interface {
-	HandleQuery(ctx context.Context, queryStr string) (string, error)
+type computeLayer interface {
+	Parse(ctx context.Context, queryStr string) (compute.Query, error)
 }
 
-type database struct {
-	comp   compute.Compute
-	stor   storage.Storage
+type storageLayer interface {
+	Set(context.Context, string, string) error
+	Get(context.Context, string) (string, error)
+	Del(context.Context, string) error
+}
+
+// Database ...
+type Database struct {
+	comp   computeLayer
+	stor   storageLayer
 	logger *zap.Logger
 }
 
 // NewDatabase ...
-func NewDatabase(logger *zap.Logger, comp compute.Compute, stor storage.Storage) (Database, error) {
+func NewDatabase(logger *zap.Logger, comp compute.Compute, stor storageLayer) (*Database, error) {
 	if logger == nil {
 		return nil, fmt.Errorf("logger is invalid")
 	}
@@ -35,14 +40,15 @@ func NewDatabase(logger *zap.Logger, comp compute.Compute, stor storage.Storage)
 		return nil, fmt.Errorf("storage is invalid")
 	}
 
-	return &database{
+	return &Database{
 		logger: logger,
 		comp:   comp,
 		stor:   stor,
 	}, nil
 }
 
-func (db *database) HandleQuery(ctx context.Context, queryStr string) (string, error) {
+// HandleQuery ...
+func (db *Database) HandleQuery(ctx context.Context, queryStr string) (string, error) {
 	query, err := db.comp.Parse(ctx, queryStr)
 	if err != nil {
 		return "", fmt.Errorf("error parsing: %w", err)
@@ -60,7 +66,7 @@ func (db *database) HandleQuery(ctx context.Context, queryStr string) (string, e
 	return "", fmt.Errorf("error handle query")
 }
 
-func (db *database) handlerSetQuery(ctx context.Context, query compute.Query) (string, error) {
+func (db *Database) handlerSetQuery(ctx context.Context, query compute.Query) (string, error) {
 	err := db.stor.Set(ctx, query.Arguments()[0], query.Arguments()[1])
 	if err != nil {
 		return "", err
@@ -68,7 +74,7 @@ func (db *database) handlerSetQuery(ctx context.Context, query compute.Query) (s
 	return "", nil
 }
 
-func (db *database) handlerGetQuery(ctx context.Context, query compute.Query) (string, error) {
+func (db *Database) handlerGetQuery(ctx context.Context, query compute.Query) (string, error) {
 	value, err := db.stor.Get(ctx, query.Arguments()[0])
 	if err != nil {
 		return "", fmt.Errorf("error hadnle get query: %w", err)
@@ -76,7 +82,7 @@ func (db *database) handlerGetQuery(ctx context.Context, query compute.Query) (s
 	return value, nil
 }
 
-func (db *database) handlerDelQuery(ctx context.Context, query compute.Query) (string, error) {
+func (db *Database) handlerDelQuery(ctx context.Context, query compute.Query) (string, error) {
 	err := db.stor.Del(ctx, query.Arguments()[0])
 	if err != nil {
 		return "", err

@@ -15,6 +15,7 @@ type Config interface {
 	TCPAddress() string
 	WALS() *WAL
 	Load(string, OS) error
+	TCPConfigS() *TCPConfig
 }
 
 type config struct {
@@ -42,6 +43,11 @@ type WAL struct {
 // WALS ...
 func (cfg *config) WALS() *WAL {
 	return cfg.WAL
+}
+
+// TCPConfigS ...
+func (cfg *config) TCPConfigS() *TCPConfig {
+	return cfg.TCPConfig
 }
 
 // TCPAddress ...

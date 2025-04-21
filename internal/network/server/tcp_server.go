@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"database-simon/internal/concurrency"
 	"errors"
 	"fmt"
 	"io"
@@ -11,6 +10,8 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+
+	"database-simon/internal/concurrency"
 )
 
 // TCPHandler ...
@@ -30,7 +31,11 @@ type TCPServer struct {
 }
 
 // NewTCPServer ...
-func NewTCPServer(address string, logger *zap.Logger, options ...TCPServerOption) (*TCPServer, error) {
+func NewTCPServer(
+	address string,
+	logger *zap.Logger,
+	options ...TCPServerOption,
+) (*TCPServer, error) {
 	if logger == nil {
 		return nil, errors.New("logger is invalid")
 	}
@@ -47,6 +52,10 @@ func NewTCPServer(address string, logger *zap.Logger, options ...TCPServerOption
 
 	for _, option := range options {
 		option(server)
+	}
+
+	if server.maxConnections != 0 {
+		server.semaphore = concurrency.NewSemaphore(server.maxConnections)
 	}
 
 	if server.bufferSize == 0 {

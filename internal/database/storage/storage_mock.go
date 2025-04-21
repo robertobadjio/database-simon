@@ -11,74 +11,139 @@ package storage
 
 import (
 	context "context"
+	concurrency "database-simon/internal/concurrency"
+	wal "database-simon/internal/database/storage/wal"
 	reflect "reflect"
 
 	gomock "go.uber.org/mock/gomock"
 )
 
-// MockStorage is a mock of Storage interface.
-type MockStorage struct {
+// MockwalI is a mock of walI interface.
+type MockwalI struct {
 	ctrl     *gomock.Controller
-	recorder *MockStorageMockRecorder
+	recorder *MockwalIMockRecorder
 	isgomock struct{}
 }
 
-// MockStorageMockRecorder is the mock recorder for MockStorage.
-type MockStorageMockRecorder struct {
-	mock *MockStorage
+// MockwalIMockRecorder is the mock recorder for MockwalI.
+type MockwalIMockRecorder struct {
+	mock *MockwalI
 }
 
-// NewMockStorage creates a new mock instance.
-func NewMockStorage(ctrl *gomock.Controller) *MockStorage {
-	mock := &MockStorage{ctrl: ctrl}
-	mock.recorder = &MockStorageMockRecorder{mock}
+// NewMockwalI creates a new mock instance.
+func NewMockwalI(ctrl *gomock.Controller) *MockwalI {
+	mock := &MockwalI{ctrl: ctrl}
+	mock.recorder = &MockwalIMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockStorage) EXPECT() *MockStorageMockRecorder {
+func (m *MockwalI) EXPECT() *MockwalIMockRecorder {
 	return m.recorder
 }
 
 // Del mocks base method.
-func (m *MockStorage) Del(arg0 context.Context, arg1 string) error {
+func (m *MockwalI) Del(arg0 context.Context, arg1 string) concurrency.FutureError {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Del", arg0, arg1)
-	ret0, _ := ret[0].(error)
+	ret0, _ := ret[0].(concurrency.FutureError)
 	return ret0
 }
 
 // Del indicates an expected call of Del.
-func (mr *MockStorageMockRecorder) Del(arg0, arg1 any) *gomock.Call {
+func (mr *MockwalIMockRecorder) Del(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Del", reflect.TypeOf((*MockStorage)(nil).Del), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Del", reflect.TypeOf((*MockwalI)(nil).Del), arg0, arg1)
 }
 
-// Get mocks base method.
-func (m *MockStorage) Get(arg0 context.Context, arg1 string) (string, error) {
+// Recover mocks base method.
+func (m *MockwalI) Recover() ([]wal.Log, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", arg0, arg1)
-	ret0, _ := ret[0].(string)
+	ret := m.ctrl.Call(m, "Recover")
+	ret0, _ := ret[0].([]wal.Log)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// Get indicates an expected call of Get.
-func (mr *MockStorageMockRecorder) Get(arg0, arg1 any) *gomock.Call {
+// Recover indicates an expected call of Recover.
+func (mr *MockwalIMockRecorder) Recover() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockStorage)(nil).Get), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Recover", reflect.TypeOf((*MockwalI)(nil).Recover))
 }
 
 // Set mocks base method.
-func (m *MockStorage) Set(arg0 context.Context, arg1, arg2 string) error {
+func (m *MockwalI) Set(arg0 context.Context, arg1, arg2 string) concurrency.FutureError {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Set", arg0, arg1, arg2)
-	ret0, _ := ret[0].(error)
+	ret0, _ := ret[0].(concurrency.FutureError)
 	return ret0
 }
 
 // Set indicates an expected call of Set.
-func (mr *MockStorageMockRecorder) Set(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockwalIMockRecorder) Set(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Set", reflect.TypeOf((*MockStorage)(nil).Set), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Set", reflect.TypeOf((*MockwalI)(nil).Set), arg0, arg1, arg2)
+}
+
+// Mockengine is a mock of engine interface.
+type Mockengine struct {
+	ctrl     *gomock.Controller
+	recorder *MockengineMockRecorder
+	isgomock struct{}
+}
+
+// MockengineMockRecorder is the mock recorder for Mockengine.
+type MockengineMockRecorder struct {
+	mock *Mockengine
+}
+
+// NewMockengine creates a new mock instance.
+func NewMockengine(ctrl *gomock.Controller) *Mockengine {
+	mock := &Mockengine{ctrl: ctrl}
+	mock.recorder = &MockengineMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *Mockengine) EXPECT() *MockengineMockRecorder {
+	return m.recorder
+}
+
+// Del mocks base method.
+func (m *Mockengine) Del(arg0 context.Context, arg1 string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Del", arg0, arg1)
+}
+
+// Del indicates an expected call of Del.
+func (mr *MockengineMockRecorder) Del(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Del", reflect.TypeOf((*Mockengine)(nil).Del), arg0, arg1)
+}
+
+// Get mocks base method.
+func (m *Mockengine) Get(arg0 context.Context, arg1 string) (string, bool) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Get", arg0, arg1)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(bool)
+	return ret0, ret1
+}
+
+// Get indicates an expected call of Get.
+func (mr *MockengineMockRecorder) Get(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*Mockengine)(nil).Get), arg0, arg1)
+}
+
+// Set mocks base method.
+func (m *Mockengine) Set(arg0 context.Context, arg1, arg2 string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Set", arg0, arg1, arg2)
+}
+
+// Set indicates an expected call of Set.
+func (mr *MockengineMockRecorder) Set(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Set", reflect.TypeOf((*Mockengine)(nil).Set), arg0, arg1, arg2)
 }

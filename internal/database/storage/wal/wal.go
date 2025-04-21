@@ -20,13 +20,7 @@ type logsReader interface {
 }
 
 // WAL ...
-type WAL interface {
-	Recover() ([]Log, error)
-	Set(context.Context, string, string) concurrency.FutureError
-	Del(context.Context, string) concurrency.FutureError
-}
-
-type wal struct {
+type WAL struct {
 	logsWriter logsWriter
 	logsReader logsReader
 
@@ -44,7 +38,7 @@ func NewWAL(
 	reader logsReader,
 	flushTimeout time.Duration,
 	maxBatchSize int,
-) (WAL, error) {
+) (*WAL, error) {
 	if writer == nil {
 		return nil, errors.New("writer is invalid")
 	}
@@ -52,7 +46,7 @@ func NewWAL(
 		return nil, errors.New("reader is invalid")
 	}
 
-	return &wal{
+	return &WAL{
 		logsWriter:   writer,
 		logsReader:   reader,
 		flushTimeout: flushTimeout,
@@ -61,7 +55,8 @@ func NewWAL(
 	}, nil
 }
 
-func (w *wal) Start(ctx context.Context) {
+// Start ...
+func (w *WAL) Start(ctx context.Context) {
 	go func() {
 		ticker := time.NewTicker(w.flushTimeout)
 		defer ticker.Stop()
@@ -89,22 +84,22 @@ func (w *wal) Start(ctx context.Context) {
 }
 
 // Recover ...
-func (w *wal) Recover() ([]Log, error) {
+func (w *WAL) Recover() ([]Log, error) {
 	// TODO: need to compact WAL segments
 	return w.logsReader.Read()
 }
 
 // Set ...
-func (w *wal) Set(ctx context.Context, key, value string) concurrency.FutureError {
+func (w *WAL) Set(ctx context.Context, key, value string) concurrency.FutureError {
 	return w.push(ctx, compute.SetCommand, []string{key, value})
 }
 
 // Del ...
-func (w *wal) Del(ctx context.Context, key string) concurrency.FutureError {
+func (w *WAL) Del(ctx context.Context, key string) concurrency.FutureError {
 	return w.push(ctx, compute.DelCommand, []string{key})
 }
 
-func (w *wal) push(ctx context.Context, commandID string, args []string) concurrency.FutureError {
+func (w *WAL) push(ctx context.Context, commandID string, args []string) concurrency.FutureError {
 	txID := common.GetTxIDFromContext(ctx)
 	record := NewWriteRequest(txID, commandID, args)
 
@@ -119,7 +114,7 @@ func (w *wal) push(ctx context.Context, commandID string, args []string) concurr
 	return record.FutureResponse()
 }
 
-func (w *wal) flushBatch() {
+func (w *WAL) flushBatch() {
 	var batch []WriteRequest
 	concurrency.WithLock(&w.mutex, func() {
 		batch = w.batch

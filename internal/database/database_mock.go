@@ -11,46 +11,114 @@ package database
 
 import (
 	context "context"
+	compute "database-simon/internal/database/compute"
 	reflect "reflect"
 
 	gomock "go.uber.org/mock/gomock"
 )
 
-// MockDatabase is a mock of Database interface.
-type MockDatabase struct {
+// MockcomputeLayer is a mock of computeLayer interface.
+type MockcomputeLayer struct {
 	ctrl     *gomock.Controller
-	recorder *MockDatabaseMockRecorder
+	recorder *MockcomputeLayerMockRecorder
 	isgomock struct{}
 }
 
-// MockDatabaseMockRecorder is the mock recorder for MockDatabase.
-type MockDatabaseMockRecorder struct {
-	mock *MockDatabase
+// MockcomputeLayerMockRecorder is the mock recorder for MockcomputeLayer.
+type MockcomputeLayerMockRecorder struct {
+	mock *MockcomputeLayer
 }
 
-// NewMockDatabase creates a new mock instance.
-func NewMockDatabase(ctrl *gomock.Controller) *MockDatabase {
-	mock := &MockDatabase{ctrl: ctrl}
-	mock.recorder = &MockDatabaseMockRecorder{mock}
+// NewMockcomputeLayer creates a new mock instance.
+func NewMockcomputeLayer(ctrl *gomock.Controller) *MockcomputeLayer {
+	mock := &MockcomputeLayer{ctrl: ctrl}
+	mock.recorder = &MockcomputeLayerMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockDatabase) EXPECT() *MockDatabaseMockRecorder {
+func (m *MockcomputeLayer) EXPECT() *MockcomputeLayerMockRecorder {
 	return m.recorder
 }
 
-// HandleQuery mocks base method.
-func (m *MockDatabase) HandleQuery(ctx context.Context, queryStr string) (string, error) {
+// Parse mocks base method.
+func (m *MockcomputeLayer) Parse(ctx context.Context, queryStr string) (compute.Query, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "HandleQuery", ctx, queryStr)
+	ret := m.ctrl.Call(m, "Parse", ctx, queryStr)
+	ret0, _ := ret[0].(compute.Query)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Parse indicates an expected call of Parse.
+func (mr *MockcomputeLayerMockRecorder) Parse(ctx, queryStr any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Parse", reflect.TypeOf((*MockcomputeLayer)(nil).Parse), ctx, queryStr)
+}
+
+// MockstorageLayer is a mock of storageLayer interface.
+type MockstorageLayer struct {
+	ctrl     *gomock.Controller
+	recorder *MockstorageLayerMockRecorder
+	isgomock struct{}
+}
+
+// MockstorageLayerMockRecorder is the mock recorder for MockstorageLayer.
+type MockstorageLayerMockRecorder struct {
+	mock *MockstorageLayer
+}
+
+// NewMockstorageLayer creates a new mock instance.
+func NewMockstorageLayer(ctrl *gomock.Controller) *MockstorageLayer {
+	mock := &MockstorageLayer{ctrl: ctrl}
+	mock.recorder = &MockstorageLayerMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockstorageLayer) EXPECT() *MockstorageLayerMockRecorder {
+	return m.recorder
+}
+
+// Del mocks base method.
+func (m *MockstorageLayer) Del(arg0 context.Context, arg1 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Del", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Del indicates an expected call of Del.
+func (mr *MockstorageLayerMockRecorder) Del(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Del", reflect.TypeOf((*MockstorageLayer)(nil).Del), arg0, arg1)
+}
+
+// Get mocks base method.
+func (m *MockstorageLayer) Get(arg0 context.Context, arg1 string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Get", arg0, arg1)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// HandleQuery indicates an expected call of HandleQuery.
-func (mr *MockDatabaseMockRecorder) HandleQuery(ctx, queryStr any) *gomock.Call {
+// Get indicates an expected call of Get.
+func (mr *MockstorageLayerMockRecorder) Get(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleQuery", reflect.TypeOf((*MockDatabase)(nil).HandleQuery), ctx, queryStr)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockstorageLayer)(nil).Get), arg0, arg1)
+}
+
+// Set mocks base method.
+func (m *MockstorageLayer) Set(arg0 context.Context, arg1, arg2 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Set", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Set indicates an expected call of Set.
+func (mr *MockstorageLayerMockRecorder) Set(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Set", reflect.TypeOf((*MockstorageLayer)(nil).Set), arg0, arg1, arg2)
 }

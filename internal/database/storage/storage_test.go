@@ -28,12 +28,12 @@ func TestNewStorage(t *testing.T) {
 			expectedNilObj: true,
 		},
 		"create storage without logger": {
-			engine:         NewMockEngine(controller),
+			engine:         NewMockengine(controller),
 			expectedErr:    errors.New("logger must be set"),
 			expectedNilObj: true,
 		},
 		"create storage": {
-			engine:         NewMockEngine(controller),
+			engine:         NewMockengine(controller),
 			logger:         zap.NewNop(),
 			expectedErr:    nil,
 			expectedNilObj: false,
@@ -61,15 +61,15 @@ func TestStorageSet(t *testing.T) {
 	controller := gomock.NewController(t)
 
 	tests := map[string]struct {
-		engine      func() Engine
+		engine      func() engine
 		expectedErr error
 	}{
 		"set": {
-			engine: func() Engine {
-				engine := NewMockEngine(controller)
-				engine.EXPECT().
+			engine: func() engine {
+				eng := NewMockengine(controller)
+				eng.EXPECT().
 					Set(gomock.Any(), "key", "value")
-				return engine
+				return eng
 			},
 			expectedErr: nil,
 		},
@@ -94,13 +94,13 @@ func TestStorageGet(t *testing.T) {
 	controller := gomock.NewController(t)
 
 	tests := map[string]struct {
-		engine        func() Engine
+		engine        func() engine
 		expectedValue string
 		expectedErr   error
 	}{
 		"get with exiting key": {
-			engine: func() Engine {
-				engine := NewMockEngine(controller)
+			engine: func() engine {
+				engine := NewMockengine(controller)
 				engine.EXPECT().
 					Get(gomock.Any(), "key").
 					Return("value", true)
@@ -110,12 +110,12 @@ func TestStorageGet(t *testing.T) {
 			expectedValue: "value",
 		},
 		"get with non-existent key": {
-			engine: func() Engine {
-				engine := NewMockEngine(controller)
-				engine.EXPECT().
+			engine: func() engine {
+				eng := NewMockengine(controller)
+				eng.EXPECT().
 					Get(gomock.Any(), "key").
 					Return("", false)
-				return engine
+				return eng
 			},
 			expectedErr:   errors.New("not found"),
 			expectedValue: "",
@@ -142,15 +142,15 @@ func TestStorageDel(t *testing.T) {
 	controller := gomock.NewController(t)
 
 	tests := map[string]struct {
-		engine      func() Engine
+		engine      func() engine
 		expectedErr error
 	}{
 		"del": {
-			engine: func() Engine {
-				engine := NewMockEngine(controller)
-				engine.EXPECT().
+			engine: func() engine {
+				eng := NewMockengine(controller)
+				eng.EXPECT().
 					Del(gomock.Any(), "key")
-				return engine
+				return eng
 			},
 			expectedErr: nil,
 		},

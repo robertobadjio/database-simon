@@ -18,7 +18,7 @@ func TestTCPServer(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	serverAddress := "localhost:55555"
+	serverAddress := "localhost:55556"
 	server, err := NewTCPServer(serverAddress, zap.NewNop())
 	require.NoError(t, err)
 

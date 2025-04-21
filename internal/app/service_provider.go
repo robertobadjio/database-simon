@@ -23,8 +23,8 @@ import (
 type serviceProvider struct {
 	logger *zap.Logger
 
-	wal      wal.WAL
-	database database.Database
+	wal      *wal.WAL
+	database *database.Database
 
 	configFileName string
 	config         config.Config
@@ -40,7 +40,7 @@ func newServiceProvider(configFileName string) (*serviceProvider, error) {
 	return &serviceProvider{configFileName: configFileName}, nil
 }
 
-func (sp *serviceProvider) Database(ctx context.Context) database.Database {
+func (sp *serviceProvider) Database(ctx context.Context) *database.Database {
 	if sp.database == nil {
 		comp := compute.NewCompute()
 		memoryEngine, err := memory.NewMemory(sp.Logger(ctx))
@@ -48,7 +48,7 @@ func (sp *serviceProvider) Database(ctx context.Context) database.Database {
 			log.Fatal("init memory engine error")
 		}
 
-		stor, err := storage.NewStorage(memoryEngine, sp.Logger(ctx))
+		stor, err := storage.NewStorage(memoryEngine, sp.Logger(ctx), storage.WithWAL(sp.WAL(ctx)))
 		if err != nil {
 			log.Fatal("init storage error")
 		}
@@ -91,11 +91,32 @@ func (sp *serviceProvider) Config(_ context.Context) config.Config {
 	return sp.config
 }
 
+// Network ...
 func (sp *serviceProvider) Network(ctx context.Context) *server.TCPServer {
 	if sp.network == nil {
 		var options []server.TCPServerOption
 		var err error
-		fmt.Println(sp.Config(ctx).TCPAddress()) // TODO: !
+
+		if sp.Config(ctx).TCPConfigS().MaxConnections != 0 {
+			options = append(options, server.WithServerMaxConnectionsNumber(uint(sp.Config(ctx).TCPConfigS().MaxConnections))) // nolint : G115: integer overflow conversion int -> uint (gosec)
+		}
+
+		if sp.Config(ctx).TCPConfigS().MaxMessageSize != "" {
+			size, errParseSize := common.ParseSize(sp.Config(ctx).TCPConfigS().MaxMessageSize)
+			if errParseSize != nil {
+				log.Fatal("incorrect max message size")
+			}
+
+			options = append(options, server.WithServerBufferSize(uint(size))) // nolint : G115: integer overflow conversion int -> uint (gosec)
+		}
+
+		if sp.Config(ctx).TCPConfigS().IdleTimeout != 0 {
+			options = append(options, server.WithServerIdleTimeout(sp.Config(ctx).TCPConfigS().IdleTimeout))
+		}
+
+		// TODO: Адрес по умолчанию
+		fmt.Println(sp.Config(ctx).TCPAddress()) // TODO: Удалить
+
 		sp.network, err = server.NewTCPServer(sp.Config(ctx).TCPAddress(), sp.Logger(ctx), options...)
 		if err != nil {
 			log.Fatal("init network error")
@@ -112,7 +133,7 @@ const (
 	defaultWALDataDirectory     = "./data/wal"
 )
 
-func (sp *serviceProvider) WAL(ctx context.Context) wal.WAL {
+func (sp *serviceProvider) WAL(ctx context.Context) *wal.WAL {
 	if sp.wal == nil {
 		flushingBatchSize := defaultFlushingBatchSize
 		flushingBatchTimeout := defaultFlushingBatchTimeout

@@ -2,11 +2,11 @@ package memory
 
 import (
 	"context"
-	"database-simon/internal/common"
 	"fmt"
 
 	"go.uber.org/zap"
 
+	"database-simon/internal/common"
 	"database-simon/internal/database/storage"
 )
 

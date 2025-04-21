@@ -11,7 +11,6 @@ import (
 	"go.uber.org/zap"
 
 	"database-simon/internal/database/compute"
-	"database-simon/internal/database/storage"
 )
 
 func TestNewDatabase(t *testing.T) {
@@ -20,8 +19,8 @@ func TestNewDatabase(t *testing.T) {
 	controller := gomock.NewController(t)
 
 	tests := map[string]struct {
-		compute compute.Compute
-		storage storage.Storage
+		compute computeLayer
+		storage storageLayer
 		logger  *zap.Logger
 
 		expectedErr    error
@@ -32,19 +31,19 @@ func TestNewDatabase(t *testing.T) {
 			expectedNilObj: true,
 		},
 		"create database without storage layer": {
-			compute:        compute.NewMockCompute(controller),
+			compute:        NewMockcomputeLayer(controller),
 			expectedErr:    errors.New("logger is invalid"),
 			expectedNilObj: true,
 		},
 		"create database without logger": {
-			compute:        compute.NewMockCompute(controller),
-			storage:        storage.NewMockStorage(controller),
+			compute:        NewMockcomputeLayer(controller),
+			storage:        NewMockstorageLayer(controller),
 			expectedErr:    errors.New("logger is invalid"),
 			expectedNilObj: true,
 		},
 		"create database": {
-			compute: compute.NewMockCompute(controller),
-			storage: storage.NewMockStorage(controller),
+			compute: NewMockcomputeLayer(controller),
+			storage: NewMockstorageLayer(controller),
 			logger:  zap.NewNop(),
 		},
 	}
@@ -73,27 +72,27 @@ func TestHandleQuery(t *testing.T) {
 	tests := map[string]struct {
 		query string
 
-		comp func() compute.Compute
-		stor func() storage.Storage
+		comp func() computeLayer
+		stor func() storageLayer
 
 		expectedResponse string
 	}{
 		"handle incorrect query": {
 			query: "TRUNCATE",
-			comp: func() compute.Compute {
-				comp := compute.NewMockCompute(controller)
+			comp: func() computeLayer {
+				comp := NewMockcomputeLayer(controller)
 				comp.EXPECT().
 					Parse(gomock.Any(), "TRUNCATE").
 					Return(nil, errors.New("unknown command"))
 				return comp
 			},
-			stor:             func() storage.Storage { return storage.NewMockStorage(controller) },
+			stor:             func() storageLayer { return NewMockstorageLayer(controller) },
 			expectedResponse: "",
 		},
 		"handle set query with error from storage": {
 			query: "SET key value",
-			comp: func() compute.Compute {
-				comp := compute.NewMockCompute(controller)
+			comp: func() computeLayer {
+				comp := NewMockcomputeLayer(controller)
 				comp.EXPECT().
 					Parse(gomock.Any(), "SET key value").
 					Return(compute.NewQuery(
@@ -102,19 +101,19 @@ func TestHandleQuery(t *testing.T) {
 					), nil)
 				return comp
 			},
-			stor: func() storage.Storage {
-				comp := storage.NewMockStorage(controller)
-				comp.EXPECT().
+			stor: func() storageLayer {
+				stop := NewMockstorageLayer(controller)
+				stop.EXPECT().
 					Set(gomock.Any(), "key", "value").
 					Return(errors.New("storage error"))
-				return comp
+				return stop
 			},
 			expectedResponse: "",
 		},
 		"handle set query": {
 			query: "SET key value",
-			comp: func() compute.Compute {
-				comp := compute.NewMockCompute(controller)
+			comp: func() computeLayer {
+				comp := NewMockcomputeLayer(controller)
 				comp.EXPECT().
 					Parse(context.Background(), "SET key value").
 					Return(compute.NewQuery(
@@ -123,8 +122,8 @@ func TestHandleQuery(t *testing.T) {
 					), nil)
 				return comp
 			},
-			stor: func() storage.Storage {
-				stor := storage.NewMockStorage(controller)
+			stor: func() storageLayer {
+				stor := NewMockstorageLayer(controller)
 				stor.EXPECT().
 					Set(gomock.Any(), "key", "value").
 					Return(nil)
@@ -134,8 +133,8 @@ func TestHandleQuery(t *testing.T) {
 		},
 		"handle del query with error from storage": {
 			query: "DEL key",
-			comp: func() compute.Compute {
-				comp := compute.NewMockCompute(controller)
+			comp: func() computeLayer {
+				comp := NewMockcomputeLayer(controller)
 				comp.EXPECT().
 					Parse(context.Background(), "DEL key").
 					Return(compute.NewQuery(
@@ -144,8 +143,8 @@ func TestHandleQuery(t *testing.T) {
 					), nil)
 				return comp
 			},
-			stor: func() storage.Storage {
-				stor := storage.NewMockStorage(controller)
+			stor: func() storageLayer {
+				stor := NewMockstorageLayer(controller)
 				stor.EXPECT().
 					Del(gomock.Any(), "key").
 					Return(errors.New("storage error"))
@@ -155,18 +154,18 @@ func TestHandleQuery(t *testing.T) {
 		},
 		"handle del query": {
 			query: "DEL key",
-			comp: func() compute.Compute {
-				computeLayer := compute.NewMockCompute(controller)
-				computeLayer.EXPECT().
+			comp: func() computeLayer {
+				comp := NewMockcomputeLayer(controller)
+				comp.EXPECT().
 					Parse(context.Background(), "DEL key").
 					Return(compute.NewQuery(
 						compute.DelCommand,
 						[]string{"key"},
 					), nil)
-				return computeLayer
+				return comp
 			},
-			stor: func() storage.Storage {
-				stor := storage.NewMockStorage(controller)
+			stor: func() storageLayer {
+				stor := NewMockstorageLayer(controller)
 				stor.EXPECT().
 					Del(gomock.Any(), "key").
 					Return(nil)
@@ -176,8 +175,8 @@ func TestHandleQuery(t *testing.T) {
 		},
 		"handle get query with error from storage": {
 			query: "GET key",
-			comp: func() compute.Compute {
-				comp := compute.NewMockCompute(controller)
+			comp: func() computeLayer {
+				comp := NewMockcomputeLayer(controller)
 				comp.EXPECT().
 					Parse(context.Background(), "GET key").
 					Return(compute.NewQuery(
@@ -186,29 +185,29 @@ func TestHandleQuery(t *testing.T) {
 					), nil)
 				return comp
 			},
-			stor: func() storage.Storage {
-				storageLayer := storage.NewMockStorage(controller)
-				storageLayer.EXPECT().
+			stor: func() storageLayer {
+				stor := NewMockstorageLayer(controller)
+				stor.EXPECT().
 					Get(gomock.Any(), "key").
 					Return("", errors.New("storage error"))
-				return storageLayer
+				return stor
 			},
 			expectedResponse: "",
 		},
 		"handle get query with not found error from storage": {
 			query: "GET key",
-			comp: func() compute.Compute {
-				computeLayer := compute.NewMockCompute(controller)
-				computeLayer.EXPECT().
+			comp: func() computeLayer {
+				comp := NewMockcomputeLayer(controller)
+				comp.EXPECT().
 					Parse(gomock.Any(), "GET key").
 					Return(compute.NewQuery(
 						compute.GetCommand,
 						[]string{"key"},
 					), nil)
-				return computeLayer
+				return comp
 			},
-			stor: func() storage.Storage {
-				stor := storage.NewMockStorage(controller)
+			stor: func() storageLayer {
+				stor := NewMockstorageLayer(controller)
 				stor.EXPECT().
 					Get(gomock.Any(), "key").
 					Return("", errors.New("not found"))
@@ -218,8 +217,8 @@ func TestHandleQuery(t *testing.T) {
 		},
 		"handle get query": {
 			query: "GET key",
-			comp: func() compute.Compute {
-				comp := compute.NewMockCompute(controller)
+			comp: func() computeLayer {
+				comp := NewMockcomputeLayer(controller)
 				comp.EXPECT().
 					Parse(gomock.Any(), "GET key").
 					Return(compute.NewQuery(
@@ -228,8 +227,8 @@ func TestHandleQuery(t *testing.T) {
 					), nil)
 				return comp
 			},
-			stor: func() storage.Storage {
-				stor := storage.NewMockStorage(controller)
+			stor: func() storageLayer {
+				stor := NewMockstorageLayer(controller)
 				stor.EXPECT().
 					Get(gomock.Any(), "key").
 					Return("value", nil)
