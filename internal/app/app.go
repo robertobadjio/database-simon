@@ -61,11 +61,12 @@ func (a *App) Run(ctx context.Context) error {
 
 	var err error
 
-	// TODO: Включать WAL только если в конфиге передана секция "wal"
-	group.Go(func() error {
-		a.serviceProvider.WAL(ctx).Start(groupCtx)
-		return nil
-	})
+	if a.serviceProvider.Config(ctx).WALS() != nil {
+		group.Go(func() error {
+			a.serviceProvider.WAL(ctx).Start(groupCtx)
+			return nil
+		})
+	}
 
 	group.Go(func() error {
 		a.serviceProvider.Network(ctx).HandleQueries(groupCtx, func(ctx context.Context, query []byte) []byte {

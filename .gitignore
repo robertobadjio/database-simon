@@ -7,6 +7,7 @@ bin/*
 !bin/.gitkeep
 
 data/wal/*
+!data/wal/.getkeep
 
 test/e2e/data/wal/*
 !test/e2e/data/wal/.gitkeep
