@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	wal2 "database-simon/internal/database/storage/wal"
 	"errors"
 	"testing"
 
@@ -11,7 +12,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func TestNewStorage(t *testing.T) {
+func TestStorage_New(t *testing.T) {
 	t.Parallel()
 
 	controller := gomock.NewController(t)
@@ -19,6 +20,7 @@ func TestNewStorage(t *testing.T) {
 	tests := map[string]struct {
 		engine Engine
 		logger *zap.Logger
+		wal    *wal2.WAL
 
 		expectedErr    error
 		expectedNilObj bool
@@ -44,7 +46,7 @@ func TestNewStorage(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			stor, err := NewStorage(test.engine, test.logger)
+			stor, err := NewStorage(test.engine, test.logger, WithWAL(test.wal))
 			assert.Equal(t, test.expectedErr, err)
 			if test.expectedNilObj {
 				assert.Nil(t, stor)
@@ -55,13 +57,15 @@ func TestNewStorage(t *testing.T) {
 	}
 }
 
-func TestStorageSet(t *testing.T) {
+func TestStorage_Set(t *testing.T) {
 	t.Parallel()
 
 	controller := gomock.NewController(t)
 
 	tests := map[string]struct {
-		engine      func() engine
+		engine func() engine
+		wal    *wal2.WAL
+
 		expectedErr error
 	}{
 		"set": {
@@ -79,7 +83,7 @@ func TestStorageSet(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			stor, err := NewStorage(test.engine(), zap.NewNop())
+			stor, err := NewStorage(test.engine(), zap.NewNop(), WithWAL(test.wal))
 			require.NoError(t, err)
 
 			err = stor.Set(context.Background(), "key", "value")
@@ -88,13 +92,15 @@ func TestStorageSet(t *testing.T) {
 	}
 }
 
-func TestStorageGet(t *testing.T) {
+func TestStorage_Get(t *testing.T) {
 	t.Parallel()
 
 	controller := gomock.NewController(t)
 
 	tests := map[string]struct {
-		engine        func() engine
+		engine func() engine
+		wal    *wal2.WAL
+
 		expectedValue string
 		expectedErr   error
 	}{
@@ -126,7 +132,7 @@ func TestStorageGet(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			stor, err := NewStorage(test.engine(), zap.NewNop())
+			stor, err := NewStorage(test.engine(), zap.NewNop(), WithWAL(test.wal))
 			require.NoError(t, err)
 
 			val, err := stor.Get(context.Background(), "key")
@@ -136,13 +142,15 @@ func TestStorageGet(t *testing.T) {
 	}
 }
 
-func TestStorageDel(t *testing.T) {
+func TestStorage_Del(t *testing.T) {
 	t.Parallel()
 
 	controller := gomock.NewController(t)
 
 	tests := map[string]struct {
-		engine      func() engine
+		engine func() engine
+		wal    *wal2.WAL
+
 		expectedErr error
 	}{
 		"del": {
@@ -160,7 +168,7 @@ func TestStorageDel(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			stor, err := NewStorage(test.engine(), zap.NewNop())
+			stor, err := NewStorage(test.engine(), zap.NewNop(), WithWAL(test.wal))
 			require.NoError(t, err)
 
 			err = stor.Del(context.Background(), "key")
