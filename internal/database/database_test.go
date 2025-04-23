@@ -87,7 +87,7 @@ func TestHandleQuery(t *testing.T) {
 				return comp
 			},
 			stor:             func() storageLayer { return NewMockstorageLayer(controller) },
-			expectedResponse: "",
+			expectedResponse: "[error]",
 		},
 		"handle set query with error from storage": {
 			query: "SET key value",
@@ -108,7 +108,7 @@ func TestHandleQuery(t *testing.T) {
 					Return(errors.New("storage error"))
 				return stop
 			},
-			expectedResponse: "",
+			expectedResponse: "[error]",
 		},
 		"handle set query": {
 			query: "SET key value",
@@ -129,7 +129,7 @@ func TestHandleQuery(t *testing.T) {
 					Return(nil)
 				return stor
 			},
-			expectedResponse: "",
+			expectedResponse: "[ok]",
 		},
 		"handle del query with error from storage": {
 			query: "DEL key",
@@ -150,7 +150,7 @@ func TestHandleQuery(t *testing.T) {
 					Return(errors.New("storage error"))
 				return stor
 			},
-			expectedResponse: "",
+			expectedResponse: "[error]",
 		},
 		"handle del query": {
 			query: "DEL key",
@@ -171,7 +171,7 @@ func TestHandleQuery(t *testing.T) {
 					Return(nil)
 				return stor
 			},
-			expectedResponse: "",
+			expectedResponse: "[ok]",
 		},
 		"handle get query with error from storage": {
 			query: "GET key",
@@ -192,7 +192,7 @@ func TestHandleQuery(t *testing.T) {
 					Return("", errors.New("storage error"))
 				return stor
 			},
-			expectedResponse: "",
+			expectedResponse: "[not found]",
 		},
 		"handle get query with not found error from storage": {
 			query: "GET key",
@@ -213,7 +213,7 @@ func TestHandleQuery(t *testing.T) {
 					Return("", errors.New("not found"))
 				return stor
 			},
-			expectedResponse: "",
+			expectedResponse: "[not found]",
 		},
 		"handle get query": {
 			query: "GET key",

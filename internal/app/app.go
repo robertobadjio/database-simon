@@ -69,15 +69,7 @@ func (a *App) Run(ctx context.Context) error {
 
 	group.Go(func() error {
 		a.serviceProvider.Network(ctx).HandleQueries(groupCtx, func(ctx context.Context, query []byte) []byte {
-			response, errDB := a.serviceProvider.Database(ctx).HandleQuery(ctx, string(query))
-			if errDB != nil {
-				fmt.Println("ERROR", err.Error()) // TODO: ?!
-			}
-
-			if response == "" {
-				response = "Success" // TODO: !
-			}
-
+			response, _ := a.serviceProvider.Database(ctx).HandleQuery(ctx, string(query)) // TODO: Handle error?
 			return []byte(response)
 		})
 

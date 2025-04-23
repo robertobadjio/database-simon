@@ -51,19 +51,31 @@ func NewDatabase(logger *zap.Logger, comp compute.Compute, stor storageLayer) (*
 func (db *Database) HandleQuery(ctx context.Context, queryStr string) (string, error) {
 	query, err := db.comp.Parse(ctx, queryStr)
 	if err != nil {
-		return "", fmt.Errorf("error parsing: %w", err)
+		return "[error]", fmt.Errorf("error parsing: %w", err)
 	}
 
 	switch query.Command() {
 	case compute.SetCommand:
-		return db.handlerSetQuery(ctx, query)
+		_, errSet := db.handlerSetQuery(ctx, query)
+		if errSet != nil {
+			return "[error]", errSet
+		}
+		return "[ok]", nil
 	case compute.GetCommand:
-		return db.handlerGetQuery(ctx, query)
+		res, errGet := db.handlerGetQuery(ctx, query)
+		if errGet != nil {
+			return "[not found]", errGet
+		}
+		return res, nil
 	case compute.DelCommand:
-		return db.handlerDelQuery(ctx, query)
+		_, errDel := db.handlerDelQuery(ctx, query)
+		if errDel != nil {
+			return "[error]", errDel
+		}
+		return "[ok]", nil
 	}
 
-	return "", fmt.Errorf("error handle query")
+	return "[error]", fmt.Errorf("error handle query")
 }
 
 func (db *Database) handlerSetQuery(ctx context.Context, query compute.Query) (string, error) {
@@ -77,7 +89,7 @@ func (db *Database) handlerSetQuery(ctx context.Context, query compute.Query) (s
 func (db *Database) handlerGetQuery(ctx context.Context, query compute.Query) (string, error) {
 	value, err := db.stor.Get(ctx, query.Arguments()[0])
 	if err != nil {
-		return "", fmt.Errorf("error hadnle get query: %w", err)
+		return "", fmt.Errorf("error handle get query: %w", err)
 	}
 	return value, nil
 }

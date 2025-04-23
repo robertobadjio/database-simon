@@ -7,3 +7,8 @@ bin/*
 !bin/.gitkeep
 
 data/wal/*
+
+test/e2e/data/wal/*
+!test/e2e/data/wal/.gitkeep
+
+storage_server

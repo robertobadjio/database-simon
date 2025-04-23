@@ -2,7 +2,6 @@ package config
 
 import (
 	"os"
-	"path/filepath"
 )
 
 // OS ...
@@ -20,7 +19,7 @@ func (customOS) GetEnv(key string) string {
 
 // ReadFile ...
 func (customOS) ReadFile(name string) ([]byte, error) {
-	return os.ReadFile(filepath.Clean(name))
+	return os.ReadFile(name)
 }
 
 // NewEnvironment ...

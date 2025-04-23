@@ -46,3 +46,9 @@ test-unit: ## Run unit tests
 
 test-unit-race: ## Run unit tests with -race flag
 	$(GO_TEST_COMMAND) ./internal/... -count=1 -race
+
+build-server:
+	go build -o storage_server ./cmd/server/server.go
+
+test-e2e: build-server
+	$(GO_TEST_COMMAND) ./test/e2e/...

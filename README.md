@@ -10,5 +10,5 @@ Blazing fast database in Go.
 
 ### Start server
 ```
-go run cmd/server/server.go --config=./config.yml
+go run cmd/server/server.go -config=./config.yml
 ```

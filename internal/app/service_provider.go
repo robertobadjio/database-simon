@@ -80,6 +80,7 @@ func (sp *serviceProvider) Config(_ context.Context) config.Config {
 		c := config.NewConfig()
 
 		env := config.NewEnvironment()
+
 		err := c.Load(sp.configFileName, env)
 		if err != nil {
 			log.Fatal(fmt.Sprintf("load config error: %s", err.Error()))
@@ -119,7 +120,7 @@ func (sp *serviceProvider) Network(ctx context.Context) *server.TCPServer {
 
 		sp.network, err = server.NewTCPServer(sp.Config(ctx).TCPAddress(), sp.Logger(ctx), options...)
 		if err != nil {
-			log.Fatal("init network error")
+			log.Fatalf("init network error: %v", err)
 		}
 	}
 

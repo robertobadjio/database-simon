@@ -12,6 +12,7 @@ func main() {
 	ctx := context.Background()
 
 	config := flag.String("config", "./config.yml", "Server config")
+	flag.Parse()
 
 	a, err := app.NewApp(ctx, *config)
 	if err != nil {
