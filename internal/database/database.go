@@ -54,6 +54,7 @@ func NewDatabase(logger *zap.Logger, comp compute.Compute, stor storageLayer) (*
 }
 
 // HandleQuery ...
+// TODO: Не возвращать ошибку
 func (db *Database) HandleQuery(ctx context.Context, queryStr string) (string, error) {
 	query, err := db.comp.Parse(ctx, queryStr)
 	if err != nil {

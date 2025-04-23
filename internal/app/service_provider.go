@@ -48,7 +48,7 @@ func (sp *serviceProvider) Database(ctx context.Context) *database.Database {
 			log.Fatal("init memory engine error")
 		}
 
-		stor, err := storage.NewStorage(memoryEngine, sp.Logger(ctx), storage.WithWAL(sp.WAL(ctx)))
+		stor, err := storage.NewStorage(memoryEngine, sp.Logger(ctx), storage.WithWAL(sp.wal))
 		if err != nil {
 			log.Fatal("init storage error")
 		}
@@ -135,52 +135,58 @@ const (
 )
 
 func (sp *serviceProvider) WAL(ctx context.Context) *wal.WAL {
-	if sp.wal == nil {
-		flushingBatchSize := defaultFlushingBatchSize
-		flushingBatchTimeout := defaultFlushingBatchTimeout
-		maxSegmentSize := defaultMaxSegmentSize
-		dataDirectory := defaultWALDataDirectory
-
-		if sp.Config(ctx).WALS().FlushingBatchSize != 0 {
-			flushingBatchSize = sp.Config(ctx).WALS().FlushingBatchSize
-		}
-
-		if sp.Config(ctx).WALS().FlushingBatchTimeout != 0 {
-			flushingBatchTimeout = sp.Config(ctx).WALS().FlushingBatchTimeout
-		}
-
-		if sp.Config(ctx).WALS().MaxSegmentSize != "" {
-			size, err := common.ParseSize(sp.Config(ctx).WALS().MaxSegmentSize)
-			if err != nil {
-				log.Fatal(errors.New("max segment size is incorrect"))
-			}
-
-			maxSegmentSize = size
-		}
-
-		if sp.Config(ctx).WALS().DataDirectory != "" {
-			dataDirectory = sp.Config(ctx).WALS().DataDirectory
-		}
-
-		segmentsDirectory := filesystem.NewSegmentsDirectory(dataDirectory)
-		reader, err := wal.NewLogsReader(segmentsDirectory)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		segment := filesystem.NewSegment(dataDirectory, maxSegmentSize)
-		writer, err := wal.NewLogsWriter(segment, sp.Logger(ctx))
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		w, err := wal.NewWAL(writer, reader, flushingBatchTimeout, flushingBatchSize)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		sp.wal = w
+	if sp.wal != nil {
+		return sp.wal
 	}
+
+	if sp.Config(ctx).WALS() == nil {
+		return nil
+	}
+
+	flushingBatchSize := defaultFlushingBatchSize
+	flushingBatchTimeout := defaultFlushingBatchTimeout
+	maxSegmentSize := defaultMaxSegmentSize
+	dataDirectory := defaultWALDataDirectory
+
+	if sp.Config(ctx).WALS().FlushingBatchSize != 0 {
+		flushingBatchSize = sp.Config(ctx).WALS().FlushingBatchSize
+	}
+
+	if sp.Config(ctx).WALS().FlushingBatchTimeout != 0 {
+		flushingBatchTimeout = sp.Config(ctx).WALS().FlushingBatchTimeout
+	}
+
+	if sp.Config(ctx).WALS().MaxSegmentSize != "" {
+		size, err := common.ParseSize(sp.Config(ctx).WALS().MaxSegmentSize)
+		if err != nil {
+			log.Fatal(errors.New("max segment size is incorrect"))
+		}
+
+		maxSegmentSize = size
+	}
+
+	if sp.Config(ctx).WALS().DataDirectory != "" {
+		dataDirectory = sp.Config(ctx).WALS().DataDirectory
+	}
+
+	segmentsDirectory := filesystem.NewSegmentsDirectory(dataDirectory)
+	reader, err := wal.NewLogsReader(segmentsDirectory)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	segment := filesystem.NewSegment(dataDirectory, maxSegmentSize)
+	writer, err := wal.NewLogsWriter(segment, sp.Logger(ctx))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	w, err := wal.NewWAL(writer, reader, flushingBatchTimeout, flushingBatchSize)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	sp.wal = w
 
 	return sp.wal
 }

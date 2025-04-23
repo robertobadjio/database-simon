@@ -3,7 +3,6 @@ package storage
 import (
 	"context"
 	"fmt"
-
 	"go.uber.org/zap"
 
 	"database-simon/internal/common"
@@ -53,7 +52,7 @@ func NewStorage(engine Engine, logger *zap.Logger, options ...Option) (*Storage,
 	}
 
 	var lastLSN int64
-	if st.wal != nil {
+	if st.wal != (*wal.WAL)(nil) {
 		logs, err := st.wal.Recover()
 		if err != nil {
 			logger.Error("failed to recover data from WAL", zap.Error(err))
@@ -77,10 +76,14 @@ func NewStorage(engine Engine, logger *zap.Logger, options ...Option) (*Storage,
 
 // Set ...
 func (s *Storage) Set(ctx context.Context, key, value string) error {
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
 	txID := s.generator.Generate()
 	ctx = common.ContextWithTxID(ctx, txID)
 
-	if s.wal != nil {
+	if s.wal != (*wal.WAL)(nil) {
 		futureResponse := s.wal.Set(ctx, key, value)
 		if err := futureResponse.Get(); err != nil {
 			return err
@@ -94,6 +97,10 @@ func (s *Storage) Set(ctx context.Context, key, value string) error {
 
 // Get ...
 func (s *Storage) Get(ctx context.Context, key string) (string, error) {
+	if ctx.Err() != nil {
+		return "", ctx.Err()
+	}
+
 	txID := s.generator.Generate()
 	ctx = common.ContextWithTxID(ctx, txID)
 
@@ -110,7 +117,7 @@ func (s *Storage) Del(ctx context.Context, key string) error {
 	txID := s.generator.Generate()
 	ctx = common.ContextWithTxID(ctx, txID)
 
-	if s.wal != nil {
+	if s.wal != (*wal.WAL)(nil) {
 		futureResponse := s.wal.Del(ctx, key)
 		if err := futureResponse.Get(); err != nil {
 			return err
