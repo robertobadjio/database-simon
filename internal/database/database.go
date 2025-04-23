@@ -9,6 +9,12 @@ import (
 	"database-simon/internal/database/compute"
 )
 
+const (
+	errorResult    = "[error]"
+	okResult       = "[ok]"
+	notFoundResult = "[not found]"
+)
+
 type computeLayer interface {
 	Parse(ctx context.Context, queryStr string) (compute.Query, error)
 }
@@ -51,31 +57,31 @@ func NewDatabase(logger *zap.Logger, comp compute.Compute, stor storageLayer) (*
 func (db *Database) HandleQuery(ctx context.Context, queryStr string) (string, error) {
 	query, err := db.comp.Parse(ctx, queryStr)
 	if err != nil {
-		return "[error]", fmt.Errorf("error parsing: %w", err)
+		return errorResult, fmt.Errorf("error parsing: %w", err)
 	}
 
 	switch query.Command() {
 	case compute.SetCommand:
 		_, errSet := db.handlerSetQuery(ctx, query)
 		if errSet != nil {
-			return "[error]", errSet
+			return errorResult, errSet
 		}
-		return "[ok]", nil
+		return okResult, nil
 	case compute.GetCommand:
 		res, errGet := db.handlerGetQuery(ctx, query)
 		if errGet != nil {
-			return "[not found]", errGet
+			return notFoundResult, errGet
 		}
 		return res, nil
 	case compute.DelCommand:
 		_, errDel := db.handlerDelQuery(ctx, query)
 		if errDel != nil {
-			return "[error]", errDel
+			return errorResult, errDel
 		}
-		return "[ok]", nil
+		return okResult, nil
 	}
 
-	return "[error]", fmt.Errorf("error handle query")
+	return errorResult, fmt.Errorf("error handle query")
 }
 
 func (db *Database) handlerSetQuery(ctx context.Context, query compute.Query) (string, error) {
