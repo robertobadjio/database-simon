@@ -7,7 +7,6 @@ import (
 	"go.uber.org/zap"
 
 	"database-simon/internal/common"
-	"database-simon/internal/database/storage"
 )
 
 // Memory ...
@@ -17,7 +16,7 @@ type Memory struct {
 }
 
 // NewMemory ...
-func NewMemory(logger *zap.Logger) (storage.Engine, error) {
+func NewMemory(logger *zap.Logger) (*Memory, error) {
 	if logger == nil {
 		return nil, fmt.Errorf("logger must be set")
 	}

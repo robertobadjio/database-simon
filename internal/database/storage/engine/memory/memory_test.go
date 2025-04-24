@@ -2,7 +2,6 @@ package memory
 
 import (
 	"context"
-	"database-simon/internal/common"
 	"errors"
 	"testing"
 
@@ -10,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"database-simon/internal/database/storage"
+	"database-simon/internal/common"
 )
 
 func TestNewMemory(t *testing.T) {
@@ -54,12 +53,12 @@ func TestEngineSet(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
-		engine storage.Engine
+		engine *Memory
 		key    string
 		value  string
 	}{
 		"set": {
-			engine: func() storage.Engine {
+			engine: func() *Memory {
 				engine, err := NewMemory(zap.NewNop())
 				require.NoError(t, err)
 				return engine
@@ -87,11 +86,11 @@ func TestEngineGet(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
-		engine storage.Engine
+		engine *Memory
 		key    string
 	}{
 		"get with single partition": {
-			engine: func() storage.Engine {
+			engine: func() *Memory {
 				engine, err := NewMemory(zap.NewNop())
 				require.NoError(t, err)
 				return engine
@@ -118,11 +117,11 @@ func TestEngineDel(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
-		engine storage.Engine
+		engine *Memory
 		key    string
 	}{
 		"del with single partition": {
-			engine: func() storage.Engine {
+			engine: func() *Memory {
 				engine, err := NewMemory(zap.NewNop())
 				require.NoError(t, err)
 

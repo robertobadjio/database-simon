@@ -2,7 +2,6 @@ package storage
 
 import (
 	"context"
-	wal2 "database-simon/internal/database/storage/wal"
 	"errors"
 	"testing"
 
@@ -10,6 +9,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 	"go.uber.org/zap"
+
+	"database-simon/internal/database/storage/wal"
 )
 
 func TestStorage_New(t *testing.T) {
@@ -18,9 +19,9 @@ func TestStorage_New(t *testing.T) {
 	controller := gomock.NewController(t)
 
 	tests := map[string]struct {
-		engine Engine
+		engine engine
 		logger *zap.Logger
-		wal    *wal2.WAL
+		wal    *wal.WAL
 
 		expectedErr    error
 		expectedNilObj bool
@@ -64,7 +65,7 @@ func TestStorage_Set(t *testing.T) {
 
 	tests := map[string]struct {
 		engine func() engine
-		wal    *wal2.WAL
+		wal    *wal.WAL
 
 		expectedErr error
 	}{
@@ -99,7 +100,7 @@ func TestStorage_Get(t *testing.T) {
 
 	tests := map[string]struct {
 		engine func() engine
-		wal    *wal2.WAL
+		wal    *wal.WAL
 
 		expectedValue string
 		expectedErr   error
@@ -149,7 +150,7 @@ func TestStorage_Del(t *testing.T) {
 
 	tests := map[string]struct {
 		engine func() engine
-		wal    *wal2.WAL
+		wal    *wal.WAL
 
 		expectedErr error
 	}{

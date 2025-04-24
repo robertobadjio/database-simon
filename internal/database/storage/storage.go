@@ -34,7 +34,7 @@ type Storage struct {
 }
 
 // NewStorage ...
-func NewStorage(engine Engine, logger *zap.Logger, options ...Option) (*Storage, error) {
+func NewStorage(engine engine, logger *zap.Logger, options ...Option) (*Storage, error) {
 	if engine == nil {
 		return nil, fmt.Errorf("engine must be set")
 	}
@@ -53,6 +53,7 @@ func NewStorage(engine Engine, logger *zap.Logger, options ...Option) (*Storage,
 	}
 
 	var lastLSN int64
+	// TODO: Nil is not nil: https://yourbasic.org/golang/gotcha-why-nil-error-not-equal-nil/
 	if st.wal != (*wal.WAL)(nil) {
 		logs, err := st.wal.Recover()
 		if err != nil {

@@ -40,6 +40,7 @@ func newServiceProvider(configFileName string) (*serviceProvider, error) {
 	return &serviceProvider{configFileName: configFileName}, nil
 }
 
+// Database ...
 func (sp *serviceProvider) Database(ctx context.Context) *database.Database {
 	if sp.database == nil {
 		comp := compute.NewCompute()
@@ -63,6 +64,7 @@ func (sp *serviceProvider) Database(ctx context.Context) *database.Database {
 	return sp.database
 }
 
+// Logger ...
 func (sp *serviceProvider) Logger(_ context.Context) *zap.Logger {
 	if sp.logger == nil {
 		logger, err := zap.NewProduction()
@@ -75,6 +77,7 @@ func (sp *serviceProvider) Logger(_ context.Context) *zap.Logger {
 	return sp.logger
 }
 
+// Config ...
 func (sp *serviceProvider) Config(_ context.Context) config.Config {
 	if sp.config == nil {
 		c := config.NewConfig()
@@ -134,6 +137,7 @@ const (
 	defaultWALDataDirectory     = "./data/wal"
 )
 
+// WAL ...
 func (sp *serviceProvider) WAL(ctx context.Context) *wal.WAL {
 	if sp.wal != nil {
 		return sp.wal

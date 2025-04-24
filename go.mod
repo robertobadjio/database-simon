@@ -3,6 +3,7 @@ module database-simon
 go 1.24.2
 
 require (
+	github.com/golang/mock v1.6.0
 	github.com/stretchr/testify v1.9.0
 	go.uber.org/mock v0.5.0
 	go.uber.org/zap v1.27.0

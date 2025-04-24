@@ -38,7 +38,9 @@ mockgen: ## Run mockgen
 	mockgen -source=./internal/database/database.go -destination=./internal/database/database_mock.go -package=database
 	mockgen -source=./internal/database/compute/compute.go -destination=./internal/database/compute/compute_mock.go -package=compute
 	mockgen -source=./internal/database/storage/storage.go -destination=./internal/database/storage/storage_mock.go -package=storage
-	mockgen -source=./internal/database/storage/engine.go -destination=./internal/database/storage/engine_mock.go -package=storage
+	mockgen -source=./internal/database/storage/wal/wal.go -destination=./internal/database/storage/wal/wal_mock.go -package=wal
+	mockgen -source=./internal/database/storage/wal/logs_reader.go -destination=./internal/database/storage/wal/logs_reader_mock.go -package=wal
+	mockgen -source=./internal/database/storage/wal/logs_writer.go -destination=./internal/database/storage/wal/logs_writer_mock.go -package=wal
 	mockgen -source=./internal/config/enviroment.go -destination=./internal/config/enviroment_mock.go -package=config
 
 test-unit: ## Run unit tests
