@@ -18,7 +18,6 @@ type TCPClient struct {
 // NewTCPClient ...
 func NewTCPClient(address string, options ...TCPClientOption) (*TCPClient, error) {
 	connection, err := net.Dial("tcp", address)
-	//defer connection.Close() // TODO: ?!
 	if err != nil {
 		return nil, fmt.Errorf("failed to dial: %w", err)
 	}

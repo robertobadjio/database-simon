@@ -16,6 +16,7 @@ import (
 )
 
 func main() {
+	//address := flag.String("address", "localhost:3232", "Address of the spider")
 	address := flag.String("address", "localhost:8081", "Address of the spider")
 	idleTimeout := flag.Duration("idle_timeout", time.Minute, "Idle timeout for connection")
 	maxMessageSizeStr := flag.String("max_message_size", "4KB", "Max message size for connection")

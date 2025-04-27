@@ -2,7 +2,7 @@ engine:
   type: "in_memory"
 network:
   host: "127.0.0.1"
-  port: "8081"
+  port: "3232"
   max_connections: 100
   max_message_size: "4KB"
   idle_timeout: 5m
@@ -13,8 +13,8 @@ wal:
   flushing_batch_size: 100
   flushing_batch_timeout: "10ms"
   max_segment_size: "10MB"
-  data_directory: "./data/wal"
+  data_directory: "./data/replica/wal"
 replication:
-  replica_type: "master"
+  replica_type: "slave"
   master_address: "127.0.0.1:8082"
   sync_interval: "1s"

@@ -20,6 +20,11 @@ wal:
   flushing_batch_timeout: "10ms"
   max_segment_size: "10MB"
   data_directory: "./data/wal"
+replication:
+  replica_type: "slave"
+  master_address: "127.0.0.1:3232"
+  sync_interval: "1s"
+  max_replicas_number: 1
 `
 
 func TestNewConfig(t *testing.T) {
@@ -74,13 +79,19 @@ func TestLoadConfig(t *testing.T) {
 					Port:           "8081",
 					MaxConnections: 100,
 					MaxMessageSize: "4KB",
-					IdleTimeout:    time.Minute * 5,
+					IdleTimeout:    5 * time.Minute,
 				},
 				&WAL{
 					FlushingBatchSize:    100,
 					FlushingBatchTimeout: 10 * time.Millisecond,
 					MaxSegmentSize:       "10MB",
 					DataDirectory:        "./data/wal",
+				},
+				&Replication{
+					ReplicaType:       "slave",
+					MasterAddress:     "127.0.0.1:3232",
+					SyncInterval:      time.Second,
+					MaxReplicasNumber: 1,
 				},
 			},
 		},

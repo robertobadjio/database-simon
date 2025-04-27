@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.uber.org/zap"
@@ -10,6 +11,13 @@ import (
 	"database-simon/internal/concurrency"
 	"database-simon/internal/database/compute"
 	"database-simon/internal/database/storage/wal"
+)
+
+var (
+	// ErrorNotFound ...
+	ErrorNotFound = errors.New("not found")
+	// ErrorMutableTX ...
+	ErrorMutableTX = errors.New("mutable transaction on slave")
 )
 
 type walI interface {
@@ -24,9 +32,14 @@ type engine interface {
 	Del(context.Context, string)
 }
 
+type replica interface {
+	IsMaster() bool
+}
+
 // Storage ...
 type Storage struct {
 	engine    engine
+	replica   replica
 	logger    *zap.Logger
 	wal       walI
 	stream    <-chan []wal.Log
@@ -78,7 +91,9 @@ func NewStorage(engine engine, logger *zap.Logger, options ...Option) (*Storage,
 
 // Set ...
 func (s *Storage) Set(ctx context.Context, key, value string) error {
-	if ctx.Err() != nil {
+	if s.replica != nil && !s.replica.IsMaster() {
+		return ErrorMutableTX
+	} else if ctx.Err() != nil {
 		return ctx.Err()
 	}
 
@@ -116,6 +131,12 @@ func (s *Storage) Get(ctx context.Context, key string) (string, error) {
 
 // Del ...
 func (s *Storage) Del(ctx context.Context, key string) error {
+	if s.replica != nil && !s.replica.IsMaster() {
+		return ErrorMutableTX
+	} else if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
 	txID := s.generator.Generate()
 	ctx = common.ContextWithTxID(ctx, txID)
 

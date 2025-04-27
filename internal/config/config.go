@@ -11,16 +11,19 @@ import (
 )
 
 // Config ...
+// TODO: Remove interface
 type Config interface {
 	TCPAddress() string
 	WALS() *WAL
 	Load(string, OS) error
 	TCPConfigS() *TCPConfig
+	ReplicationS() *Replication
 }
 
 type config struct {
-	TCPConfig *TCPConfig `yaml:"network"`
-	WAL       *WAL       `yaml:"wal"`
+	TCPConfig   *TCPConfig   `yaml:"network"`
+	WAL         *WAL         `yaml:"wal"`
+	Replication *Replication `yaml:"replication"`
 }
 
 // TCPConfig ...
@@ -40,6 +43,14 @@ type WAL struct {
 	DataDirectory        string        `yaml:"data_directory"`
 }
 
+// Replication ...
+type Replication struct {
+	ReplicaType       string        `yaml:"replica_type"`
+	MasterAddress     string        `yaml:"master_address"`
+	SyncInterval      time.Duration `yaml:"sync_interval"`
+	MaxReplicasNumber int           `yaml:"max_replicas_number"`
+}
+
 // WALS ...
 func (cfg *config) WALS() *WAL {
 	return cfg.WAL
@@ -48,6 +59,11 @@ func (cfg *config) WALS() *WAL {
 // TCPConfigS ...
 func (cfg *config) TCPConfigS() *TCPConfig {
 	return cfg.TCPConfig
+}
+
+// ReplicationS ...
+func (cfg *config) ReplicationS() *Replication {
+	return cfg.Replication
 }
 
 // TCPAddress ...

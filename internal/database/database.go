@@ -65,6 +65,7 @@ func (db *Database) HandleQuery(ctx context.Context, queryStr string) (string, e
 	case compute.SetCommand:
 		_, errSet := db.handlerSetQuery(ctx, query)
 		if errSet != nil {
+			db.logger.Error("error handling query", zap.String("query", queryStr), zap.Error(errSet))
 			return errorResult, errSet
 		}
 		return okResult, nil

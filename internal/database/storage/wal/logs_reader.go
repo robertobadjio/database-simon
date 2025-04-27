@@ -39,7 +39,7 @@ func (r *LogsReader) Read() ([]Log, error) {
 		return nil, fmt.Errorf("failed to read segments: %w", err)
 	}
 
-	// TODO: need to chech invariant for sorting
+	// TODO: need to check invariant for sorting
 	sort.Slice(logs, func(i, j int) bool {
 		return logs[i].LSN < logs[j].LSN
 	})

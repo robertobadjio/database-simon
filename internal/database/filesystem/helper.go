@@ -22,7 +22,7 @@ func SegmentNext(directory string, segmentName string) (string, error) {
 	}
 
 	idx := upperBound(filenames, segmentName)
-	if idx < len(filenames)-1 { // not last
+	if idx <= len(filenames)-1 {
 		return filenames[idx], nil
 	}
 

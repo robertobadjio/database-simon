@@ -6,6 +6,8 @@ import (
 	"log"
 
 	"golang.org/x/sync/errgroup"
+
+	"database-simon/internal/database/storage/replication"
 )
 
 // App ...
@@ -59,18 +61,37 @@ func (a *App) Run(ctx context.Context) error {
 	fmt.Println("Start server...")
 	group, groupCtx := errgroup.WithContext(ctx)
 
+	db := a.serviceProvider.Database(ctx)
+
 	var err error
 
 	if a.serviceProvider.Config(ctx).WALS() != nil {
-		group.Go(func() error {
-			a.serviceProvider.WAL(ctx).Start(groupCtx)
-			return nil
-		})
+		if a.serviceProvider.slave != (*replication.Slave)(nil) { // TOOD: ?!
+			a.serviceProvider.Logger(ctx).Info("start slave replication")
+			group.Go(func() error {
+				a.serviceProvider.slave.Start(groupCtx)
+				return nil
+			})
+		} else {
+			a.serviceProvider.Logger(ctx).Info("start WAL")
+			group.Go(func() error {
+				a.serviceProvider.WAL(ctx).Start(groupCtx)
+				return nil
+			})
+		}
+
+		if a.serviceProvider.master != nil {
+			a.serviceProvider.Logger(ctx).Info("start master replication")
+			group.Go(func() error {
+				a.serviceProvider.master.Start(groupCtx)
+				return nil
+			})
+		}
 	}
 
 	group.Go(func() error {
 		a.serviceProvider.Network(ctx).HandleQueries(groupCtx, func(ctx context.Context, query []byte) []byte {
-			response, _ := a.serviceProvider.Database(ctx).HandleQuery(ctx, string(query)) // TODO: Handle error?
+			response, _ := db.HandleQuery(ctx, string(query)) // TODO: Handle error?
 			return []byte(response)
 		})
 

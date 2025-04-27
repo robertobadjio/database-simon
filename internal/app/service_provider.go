@@ -16,14 +16,19 @@ import (
 	"database-simon/internal/database/filesystem"
 	"database-simon/internal/database/storage"
 	"database-simon/internal/database/storage/engine/memory"
+	"database-simon/internal/database/storage/replication"
 	"database-simon/internal/database/storage/wal"
+	"database-simon/internal/network/client"
 	"database-simon/internal/network/server"
 )
 
 type serviceProvider struct {
 	logger *zap.Logger
 
-	wal      *wal.WAL
+	wal *wal.WAL
+	//replica  interface{}
+	slave    *replication.Slave
+	master   *replication.Master
 	database *database.Database
 
 	configFileName string
@@ -49,7 +54,31 @@ func (sp *serviceProvider) Database(ctx context.Context) *database.Database {
 			log.Fatal("init memory engine error")
 		}
 
-		stor, err := storage.NewStorage(memoryEngine, sp.Logger(ctx), storage.WithWAL(sp.wal))
+		replica, err := sp.Replica(ctx)
+		if err != nil {
+			log.Fatalf("init replica error: %v", err)
+		}
+
+		switch v := replica.(type) {
+		case *replication.Slave:
+			sp.slave = v
+		case *replication.Master:
+			sp.master = v
+		}
+
+		var options []storage.Option
+		if sp.WAL(ctx) != nil {
+			options = append(options, storage.WithWAL(sp.WAL(ctx)))
+		}
+
+		if sp.master != nil {
+			options = append(options, storage.WithReplication(sp.master))
+		} else if sp.slave != nil {
+			options = append(options, storage.WithReplication(sp.slave))
+			options = append(options, storage.WithReplicationStream(sp.slave.ReplicationStream()))
+		}
+
+		stor, err := storage.NewStorage(memoryEngine, sp.Logger(ctx), options...)
 		if err != nil {
 			log.Fatal("init storage error")
 		}
@@ -193,4 +222,77 @@ func (sp *serviceProvider) WAL(ctx context.Context) *wal.WAL {
 	sp.wal = w
 
 	return sp.wal
+}
+
+const (
+	masterType = "master"
+	slaveType  = "slave"
+)
+
+const (
+	defaultReplicationSyncInterval = time.Second
+	defaultMaxReplicasNumber       = 5
+)
+
+// Replica ...
+func (sp *serviceProvider) Replica(ctx context.Context) (interface{}, error) {
+	supportedTypes := map[string]struct{}{
+		masterType: {},
+		slaveType:  {},
+	}
+
+	if _, found := supportedTypes[sp.Config(ctx).ReplicationS().ReplicaType]; !found {
+		return nil, errors.New("replica type is incorrect")
+	}
+
+	if sp.Config(ctx).ReplicationS().MasterAddress == "" {
+		return nil, errors.New("master address is incorrect")
+	}
+
+	maxMessageSize := defaultMaxSegmentSize
+	masterAddress := sp.Config(ctx).ReplicationS().MasterAddress
+	syncInterval := defaultReplicationSyncInterval
+	walDirectory := defaultWALDataDirectory
+
+	if sp.Config(ctx).ReplicationS().SyncInterval != 0 {
+		syncInterval = sp.Config(ctx).ReplicationS().SyncInterval
+	}
+
+	if sp.Config(ctx).WALS().DataDirectory != "" {
+		walDirectory = sp.Config(ctx).WALS().DataDirectory
+	}
+
+	if sp.Config(ctx).WALS().MaxSegmentSize != "" {
+		size, _ := common.ParseSize(sp.Config(ctx).WALS().MaxSegmentSize)
+		maxMessageSize = size
+	}
+
+	idleTimeout := syncInterval * 3
+	if sp.config.ReplicationS().ReplicaType == masterType {
+		maxReplicasNumber := defaultMaxReplicasNumber
+		if sp.config.ReplicationS().MaxReplicasNumber != 0 {
+			maxReplicasNumber = sp.config.ReplicationS().MaxReplicasNumber
+		}
+
+		var options []server.TCPServerOption
+		options = append(options, server.WithServerIdleTimeout(idleTimeout))
+		options = append(options, server.WithServerBufferSize(uint(maxMessageSize)))              // nolint : G115: integer overflow conversion int -> uint (gosec)
+		options = append(options, server.WithServerMaxConnectionsNumber(uint(maxReplicasNumber))) // nolint : G115: integer overflow conversion int -> uint (gosec)
+		s, err := server.NewTCPServer(masterAddress, sp.Logger(ctx), options...)
+		if err != nil {
+			return nil, err
+		}
+
+		return replication.NewMaster(s, walDirectory, sp.Logger(ctx))
+	}
+
+	var options []client.TCPClientOption
+	//options = append(options, client.WithClientIdleTimeout(idleTimeout))
+	options = append(options, client.WithClientBufferSize(uint(maxMessageSize))) // nolint : G115: integer overflow conversion int -> uint (gosec)
+	c, err := client.NewTCPClient(masterAddress, options...)
+	if err != nil {
+		return nil, err
+	}
+
+	return replication.NewSlave(c, walDirectory, syncInterval, sp.Logger(ctx))
 }
