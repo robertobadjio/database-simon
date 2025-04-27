@@ -1,10 +1,10 @@
-# :cat2: Simon Database
+# :zap: Simon Database
 
 <div align="center">
 
 Blazing fast database in Go.
 
-![Simon logo](assets/logo.png)
+![Simon logo](assets/logo.png.webp)
 
 </div>
 
