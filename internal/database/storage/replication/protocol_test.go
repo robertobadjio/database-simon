@@ -7,10 +7,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const sName = "wal_1000.log"
+
 func TestRequest(t *testing.T) {
 	t.Parallel()
 
-	lastSegmentName := "wal_1000.log"
+	lastSegmentName := sName
 	initialRequest := NewRequest(lastSegmentName)
 	data, err := Encode(&initialRequest)
 	require.NoError(t, err)
@@ -27,7 +29,7 @@ func TestResponse(t *testing.T) {
 	t.Parallel()
 
 	succeed := true
-	segmentName := "wal_1000.log"
+	segmentName := sName
 	segmentData := []byte{'s', 'y', 'n', 'c'}
 	initialResponse := NewResponse(succeed, segmentName, segmentData)
 	data, err := Encode(&initialResponse)
