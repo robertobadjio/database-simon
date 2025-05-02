@@ -66,8 +66,7 @@ func NewStorage(engine engine, logger *zap.Logger, options ...Option) (*Storage,
 	}
 
 	var lastLSN int64
-	// TODO: Nil is not nil: https://yourbasic.org/golang/gotcha-why-nil-error-not-equal-nil/
-	if st.wal != (*wal.WAL)(nil) {
+	if st.wal != nil {
 		logs, err := st.wal.Recover()
 		if err != nil {
 			logger.Error("failed to recover data from WAL", zap.Error(err))
@@ -100,7 +99,7 @@ func (s *Storage) Set(ctx context.Context, key, value string) error {
 	txID := s.generator.Generate()
 	ctx = common.ContextWithTxID(ctx, txID)
 
-	if s.wal != (*wal.WAL)(nil) {
+	if s.wal != nil {
 		futureResponse := s.wal.Set(ctx, key, value)
 		if err := futureResponse.Get(); err != nil {
 			return err
@@ -140,7 +139,7 @@ func (s *Storage) Del(ctx context.Context, key string) error {
 	txID := s.generator.Generate()
 	ctx = common.ContextWithTxID(ctx, txID)
 
-	if s.wal != (*wal.WAL)(nil) {
+	if s.wal != nil {
 		futureResponse := s.wal.Del(ctx, key)
 		if err := futureResponse.Get(); err != nil {
 			return err

@@ -62,7 +62,7 @@ func TestLoadConfig(t *testing.T) {
 		cfgFileName string
 
 		expectedErr error
-		expectedCfg Config
+		expectedCfg *Config
 	}{
 		"load config": {
 			cfgFileName: "config.yml",
@@ -73,8 +73,9 @@ func TestLoadConfig(t *testing.T) {
 				return env
 			},
 			expectedErr: nil,
-			expectedCfg: &config{
-				&TCPConfig{
+			expectedCfg: &Config{
+				nil,
+				&TCP{
 					Host:           "127.0.0.1",
 					Port:           "8081",
 					MaxConnections: 100,
@@ -104,7 +105,7 @@ func TestLoadConfig(t *testing.T) {
 				return env
 			},
 			expectedErr: nil,
-			expectedCfg: &config{},
+			expectedCfg: &Config{},
 		},
 	}
 

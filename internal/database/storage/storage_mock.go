@@ -147,3 +147,41 @@ func (mr *MockengineMockRecorder) Set(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Set", reflect.TypeOf((*Mockengine)(nil).Set), arg0, arg1, arg2)
 }
+
+// Mockreplica is a mock of replica interface.
+type Mockreplica struct {
+	ctrl     *gomock.Controller
+	recorder *MockreplicaMockRecorder
+	isgomock struct{}
+}
+
+// MockreplicaMockRecorder is the mock recorder for Mockreplica.
+type MockreplicaMockRecorder struct {
+	mock *Mockreplica
+}
+
+// NewMockreplica creates a new mock instance.
+func NewMockreplica(ctrl *gomock.Controller) *Mockreplica {
+	mock := &Mockreplica{ctrl: ctrl}
+	mock.recorder = &MockreplicaMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *Mockreplica) EXPECT() *MockreplicaMockRecorder {
+	return m.recorder
+}
+
+// IsMaster mocks base method.
+func (m *Mockreplica) IsMaster() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsMaster")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IsMaster indicates an expected call of IsMaster.
+func (mr *MockreplicaMockRecorder) IsMaster() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsMaster", reflect.TypeOf((*Mockreplica)(nil).IsMaster))
+}

@@ -58,14 +58,14 @@ func (a *App) initServiceProvider(_ context.Context) error {
 
 // Run ...
 func (a *App) Run(ctx context.Context) error {
-	fmt.Println("Start server...")
+	a.serviceProvider.Logger(ctx).Info("Start server...")
 	group, groupCtx := errgroup.WithContext(ctx)
 
 	db := a.serviceProvider.Database(ctx)
 
 	var err error
 
-	if a.serviceProvider.Config(ctx).WALS() != nil {
+	if a.serviceProvider.Config(ctx).WAL != nil {
 		if a.serviceProvider.slave != (*replication.Slave)(nil) { // TOOD: ?!
 			a.serviceProvider.Logger(ctx).Info("start slave replication")
 			group.Go(func() error {

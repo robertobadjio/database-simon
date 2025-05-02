@@ -1,5 +1,6 @@
 engine:
   type: "in_memory"
+  partitions_number: 100
 network:
   host: "127.0.0.1"
   port: "8081"
@@ -9,12 +10,3 @@ network:
 logging:
   level: "info"
   output: "/log/output.log"
-wal:
-  flushing_batch_size: 100
-  flushing_batch_timeout: "10ms"
-  max_segment_size: "10MB"
-  data_directory: "./data/wal"
-replication:
-  replica_type: "master"
-  master_address: "127.0.0.1:8082"
-  sync_interval: "1s"

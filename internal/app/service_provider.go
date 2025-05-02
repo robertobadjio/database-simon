@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"time"
 
 	"go.uber.org/zap"
 
@@ -25,14 +24,13 @@ import (
 type serviceProvider struct {
 	logger *zap.Logger
 
-	wal *wal.WAL
-	//replica  interface{}
+	wal      *wal.WAL
 	slave    *replication.Slave
 	master   *replication.Master
 	database *database.Database
 
 	configFileName string
-	config         config.Config
+	config         *config.Config
 
 	network *server.TCPServer
 }
@@ -49,7 +47,13 @@ func newServiceProvider(configFileName string) (*serviceProvider, error) {
 func (sp *serviceProvider) Database(ctx context.Context) *database.Database {
 	if sp.database == nil {
 		comp := compute.NewCompute()
-		memoryEngine, err := memory.NewMemory(sp.Logger(ctx))
+
+		var memoryOptions []memory.EngineOption
+		if sp.Config(ctx).Engine.PartitionsNumber != 0 {
+			memoryOptions = append(memoryOptions, memory.WithPartitions(sp.Config(ctx).Engine.PartitionsNumber))
+		}
+
+		memoryEngine, err := memory.NewMemory(sp.Logger(ctx), memoryOptions...)
 		if err != nil {
 			log.Fatal("init memory engine error")
 		}
@@ -66,19 +70,19 @@ func (sp *serviceProvider) Database(ctx context.Context) *database.Database {
 			sp.master = v
 		}
 
-		var options []storage.Option
+		var storageOptions []storage.Option
 		if sp.WAL(ctx) != nil {
-			options = append(options, storage.WithWAL(sp.WAL(ctx)))
+			storageOptions = append(storageOptions, storage.WithWAL(sp.WAL(ctx)))
 		}
 
 		if sp.master != nil {
-			options = append(options, storage.WithReplication(sp.master))
+			storageOptions = append(storageOptions, storage.WithReplication(sp.master))
 		} else if sp.slave != nil {
-			options = append(options, storage.WithReplication(sp.slave))
-			options = append(options, storage.WithReplicationStream(sp.slave.ReplicationStream()))
+			storageOptions = append(storageOptions, storage.WithReplication(sp.slave))
+			storageOptions = append(storageOptions, storage.WithReplicationStream(sp.slave.ReplicationStream()))
 		}
 
-		stor, err := storage.NewStorage(memoryEngine, sp.Logger(ctx), options...)
+		stor, err := storage.NewStorage(memoryEngine, sp.Logger(ctx), storageOptions...)
 		if err != nil {
 			log.Fatal("init storage error")
 		}
@@ -107,7 +111,7 @@ func (sp *serviceProvider) Logger(_ context.Context) *zap.Logger {
 }
 
 // Config ...
-func (sp *serviceProvider) Config(_ context.Context) config.Config {
+func (sp *serviceProvider) Config(_ context.Context) *config.Config {
 	if sp.config == nil {
 		c := config.NewConfig()
 
@@ -130,12 +134,12 @@ func (sp *serviceProvider) Network(ctx context.Context) *server.TCPServer {
 		var options []server.TCPServerOption
 		var err error
 
-		if sp.Config(ctx).TCPConfigS().MaxConnections != 0 {
-			options = append(options, server.WithServerMaxConnectionsNumber(uint(sp.Config(ctx).TCPConfigS().MaxConnections))) // nolint : G115: integer overflow conversion int -> uint (gosec)
+		if sp.Config(ctx).TCP.MaxConnections != 0 {
+			options = append(options, server.WithServerMaxConnectionsNumber(uint(sp.Config(ctx).TCP.MaxConnections))) // nolint : G115: integer overflow conversion int -> uint (gosec)
 		}
 
-		if sp.Config(ctx).TCPConfigS().MaxMessageSize != "" {
-			size, errParseSize := common.ParseSize(sp.Config(ctx).TCPConfigS().MaxMessageSize)
+		if sp.Config(ctx).TCP.MaxMessageSize != "" {
+			size, errParseSize := common.ParseSize(sp.Config(ctx).TCP.MaxMessageSize)
 			if errParseSize != nil {
 				log.Fatal("incorrect max message size")
 			}
@@ -143,14 +147,14 @@ func (sp *serviceProvider) Network(ctx context.Context) *server.TCPServer {
 			options = append(options, server.WithServerBufferSize(uint(size))) // nolint : G115: integer overflow conversion int -> uint (gosec)
 		}
 
-		if sp.Config(ctx).TCPConfigS().IdleTimeout != 0 {
-			options = append(options, server.WithServerIdleTimeout(sp.Config(ctx).TCPConfigS().IdleTimeout))
+		if sp.Config(ctx).TCP.IdleTimeout != 0 {
+			options = append(options, server.WithServerIdleTimeout(sp.Config(ctx).TCP.IdleTimeout))
 		}
 
 		// TODO: Адрес по умолчанию
-		fmt.Println(sp.Config(ctx).TCPAddress()) // TODO: Удалить
+		fmt.Println(sp.Config(ctx).TCP.Address()) // TODO: Удалить
 
-		sp.network, err = server.NewTCPServer(sp.Config(ctx).TCPAddress(), sp.Logger(ctx), options...)
+		sp.network, err = server.NewTCPServer(sp.Config(ctx).TCP.Address(), sp.Logger(ctx), options...)
 		if err != nil {
 			log.Fatalf("init network error: %v", err)
 		}
@@ -159,62 +163,34 @@ func (sp *serviceProvider) Network(ctx context.Context) *server.TCPServer {
 	return sp.network
 }
 
-const (
-	defaultFlushingBatchSize    = 100
-	defaultFlushingBatchTimeout = time.Millisecond * 10
-	defaultMaxSegmentSize       = 10 << 20
-	defaultWALDataDirectory     = "./data/wal"
-)
-
 // WAL ...
 func (sp *serviceProvider) WAL(ctx context.Context) *wal.WAL {
 	if sp.wal != nil {
 		return sp.wal
 	}
 
-	if sp.Config(ctx).WALS() == nil {
+	if sp.Config(ctx).WAL == nil {
 		return nil
 	}
 
-	flushingBatchSize := defaultFlushingBatchSize
-	flushingBatchTimeout := defaultFlushingBatchTimeout
-	maxSegmentSize := defaultMaxSegmentSize
-	dataDirectory := defaultWALDataDirectory
-
-	if sp.Config(ctx).WALS().FlushingBatchSize != 0 {
-		flushingBatchSize = sp.Config(ctx).WALS().FlushingBatchSize
-	}
-
-	if sp.Config(ctx).WALS().FlushingBatchTimeout != 0 {
-		flushingBatchTimeout = sp.Config(ctx).WALS().FlushingBatchTimeout
-	}
-
-	if sp.Config(ctx).WALS().MaxSegmentSize != "" {
-		size, err := common.ParseSize(sp.Config(ctx).WALS().MaxSegmentSize)
-		if err != nil {
-			log.Fatal(errors.New("max segment size is incorrect"))
-		}
-
-		maxSegmentSize = size
-	}
-
-	if sp.Config(ctx).WALS().DataDirectory != "" {
-		dataDirectory = sp.Config(ctx).WALS().DataDirectory
-	}
-
-	segmentsDirectory := filesystem.NewSegmentsDirectory(dataDirectory)
+	segmentsDirectory := filesystem.NewSegmentsDirectory(sp.Config(ctx).WAL.GetDataDirectory())
 	reader, err := wal.NewLogsReader(segmentsDirectory)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	segment := filesystem.NewSegment(dataDirectory, maxSegmentSize)
+	segment := filesystem.NewSegment(sp.Config(ctx).WAL.GetDataDirectory(), sp.Config(ctx).WAL.GetMaxSegmentSize())
 	writer, err := wal.NewLogsWriter(segment, sp.Logger(ctx))
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	w, err := wal.NewWAL(writer, reader, flushingBatchTimeout, flushingBatchSize)
+	w, err := wal.NewWAL(
+		writer,
+		reader,
+		sp.Config(ctx).WAL.GetFlushingBatchTimeout(),
+		sp.Config(ctx).WAL.GetFlushingBatchSize(),
+	)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -224,61 +200,35 @@ func (sp *serviceProvider) WAL(ctx context.Context) *wal.WAL {
 	return sp.wal
 }
 
-const (
-	masterType = "master"
-	slaveType  = "slave"
-)
-
-const (
-	defaultReplicationSyncInterval = time.Second
-	defaultMaxReplicasNumber       = 5
-)
-
 // Replica ...
 func (sp *serviceProvider) Replica(ctx context.Context) (interface{}, error) {
-	supportedTypes := map[string]struct{}{
-		masterType: {},
-		slaveType:  {},
+	if sp.Config(ctx).Replication == nil {
+		return nil, nil
 	}
 
-	if _, found := supportedTypes[sp.Config(ctx).ReplicationS().ReplicaType]; !found {
+	if _, found := config.SupportedTypes[sp.Config(ctx).Replication.ReplicaType]; !found {
 		return nil, errors.New("replica type is incorrect")
 	}
 
-	if sp.Config(ctx).ReplicationS().MasterAddress == "" {
-		return nil, errors.New("master address is incorrect")
+	maxMessageSize := sp.Config(ctx).WAL.GetMaxSegmentSize()
+	walDirectory := sp.Config(ctx).WAL.GetDataDirectory()
+
+	if sp.Config(ctx).WAL.DataDirectory != "" {
+		walDirectory = sp.Config(ctx).WAL.DataDirectory
 	}
 
-	maxMessageSize := defaultMaxSegmentSize
-	masterAddress := sp.Config(ctx).ReplicationS().MasterAddress
-	syncInterval := defaultReplicationSyncInterval
-	walDirectory := defaultWALDataDirectory
-
-	if sp.Config(ctx).ReplicationS().SyncInterval != 0 {
-		syncInterval = sp.Config(ctx).ReplicationS().SyncInterval
-	}
-
-	if sp.Config(ctx).WALS().DataDirectory != "" {
-		walDirectory = sp.Config(ctx).WALS().DataDirectory
-	}
-
-	if sp.Config(ctx).WALS().MaxSegmentSize != "" {
-		size, _ := common.ParseSize(sp.Config(ctx).WALS().MaxSegmentSize)
+	if sp.Config(ctx).WAL.MaxSegmentSize != "" {
+		size, _ := common.ParseSize(sp.Config(ctx).WAL.MaxSegmentSize)
 		maxMessageSize = size
 	}
 
-	idleTimeout := syncInterval * 3
-	if sp.config.ReplicationS().ReplicaType == masterType {
-		maxReplicasNumber := defaultMaxReplicasNumber
-		if sp.config.ReplicationS().MaxReplicasNumber != 0 {
-			maxReplicasNumber = sp.config.ReplicationS().MaxReplicasNumber
-		}
-
+	idleTimeout := sp.Config(ctx).Replication.GetSyncInterval() * 3
+	if sp.config.Replication.ReplicaType == config.MasterType {
 		var options []server.TCPServerOption
 		options = append(options, server.WithServerIdleTimeout(idleTimeout))
-		options = append(options, server.WithServerBufferSize(uint(maxMessageSize)))              // nolint : G115: integer overflow conversion int -> uint (gosec)
-		options = append(options, server.WithServerMaxConnectionsNumber(uint(maxReplicasNumber))) // nolint : G115: integer overflow conversion int -> uint (gosec)
-		s, err := server.NewTCPServer(masterAddress, sp.Logger(ctx), options...)
+		options = append(options, server.WithServerBufferSize(uint(maxMessageSize)))                                              // nolint : G115: integer overflow conversion int -> uint (gosec)
+		options = append(options, server.WithServerMaxConnectionsNumber(uint(sp.Config(ctx).Replication.GetMaxReplicasNumber()))) // nolint : G115: integer overflow conversion int -> uint (gosec)
+		s, err := server.NewTCPServer(sp.Config(ctx).Replication.MasterAddress, sp.Logger(ctx), options...)
 		if err != nil {
 			return nil, err
 		}
@@ -289,10 +239,10 @@ func (sp *serviceProvider) Replica(ctx context.Context) (interface{}, error) {
 	var options []client.TCPClientOption
 	//options = append(options, client.WithClientIdleTimeout(idleTimeout))
 	options = append(options, client.WithClientBufferSize(uint(maxMessageSize))) // nolint : G115: integer overflow conversion int -> uint (gosec)
-	c, err := client.NewTCPClient(masterAddress, options...)
+	c, err := client.NewTCPClient(sp.Config(ctx).Replication.MasterAddress, options...)
 	if err != nil {
 		return nil, err
 	}
 
-	return replication.NewSlave(c, walDirectory, syncInterval, sp.Logger(ctx))
+	return replication.NewSlave(c, walDirectory, sp.Config(ctx).Replication.GetSyncInterval(), sp.Logger(ctx))
 }

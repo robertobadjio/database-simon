@@ -18,10 +18,15 @@ func TestStorage_New(t *testing.T) {
 
 	controller := gomock.NewController(t)
 
+	writeAheadLog := NewMockwalI(controller)
+	writeAheadLog.EXPECT().
+		Recover().
+		Return(nil, nil)
+
 	tests := map[string]struct {
-		engine engine
-		logger *zap.Logger
-		wal    *wal.WAL
+		engine  engine
+		logger  *zap.Logger
+		options []Option
 
 		expectedErr    error
 		expectedNilObj bool
@@ -31,15 +36,36 @@ func TestStorage_New(t *testing.T) {
 			expectedNilObj: true,
 		},
 		"create storage without logger": {
-			engine:         NewMockengine(controller),
+			engine: NewMockengine(controller),
+
 			expectedErr:    errors.New("logger must be set"),
 			expectedNilObj: true,
 		},
-		"create storage": {
-			engine:         NewMockengine(controller),
-			logger:         zap.NewNop(),
+		"create engine without options": {
+			engine: NewMockengine(controller),
+			logger: zap.NewNop(),
+
 			expectedErr:    nil,
 			expectedNilObj: false,
+		},
+		"create engine with wal": {
+			engine:  NewMockengine(controller),
+			logger:  zap.NewNop(),
+			options: []Option{WithWAL(writeAheadLog)},
+
+			expectedErr: nil,
+		},
+		"create engine with replica": {
+			engine:      NewMockengine(controller),
+			logger:      zap.NewNop(),
+			options:     []Option{WithReplication(NewMockreplica(controller))},
+			expectedErr: nil,
+		},
+		"create engine with replication stream": {
+			engine:      NewMockengine(controller),
+			logger:      zap.NewNop(),
+			options:     []Option{WithReplicationStream(make(<-chan []wal.Log))},
+			expectedErr: nil,
 		},
 	}
 
@@ -47,7 +73,7 @@ func TestStorage_New(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			stor, err := NewStorage(test.engine, test.logger, WithWAL(test.wal))
+			stor, err := NewStorage(test.engine, test.logger, test.options...)
 			assert.Equal(t, test.expectedErr, err)
 			if test.expectedNilObj {
 				assert.Nil(t, stor)
@@ -65,7 +91,6 @@ func TestStorage_Set(t *testing.T) {
 
 	tests := map[string]struct {
 		engine func() engine
-		wal    *wal.WAL
 
 		expectedErr error
 	}{
@@ -84,7 +109,7 @@ func TestStorage_Set(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			stor, err := NewStorage(test.engine(), zap.NewNop(), WithWAL(test.wal))
+			stor, err := NewStorage(test.engine(), zap.NewNop())
 			require.NoError(t, err)
 
 			err = stor.Set(context.Background(), "key", "value")
@@ -100,18 +125,17 @@ func TestStorage_Get(t *testing.T) {
 
 	tests := map[string]struct {
 		engine func() engine
-		wal    *wal.WAL
 
 		expectedValue string
 		expectedErr   error
 	}{
 		"get with exiting key": {
 			engine: func() engine {
-				engine := NewMockengine(controller)
-				engine.EXPECT().
+				eng := NewMockengine(controller)
+				eng.EXPECT().
 					Get(gomock.Any(), "key").
 					Return("value", true)
-				return engine
+				return eng
 			},
 			expectedErr:   nil,
 			expectedValue: "value",
@@ -133,7 +157,7 @@ func TestStorage_Get(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			stor, err := NewStorage(test.engine(), zap.NewNop(), WithWAL(test.wal))
+			stor, err := NewStorage(test.engine(), zap.NewNop())
 			require.NoError(t, err)
 
 			val, err := stor.Get(context.Background(), "key")
@@ -150,7 +174,6 @@ func TestStorage_Del(t *testing.T) {
 
 	tests := map[string]struct {
 		engine func() engine
-		wal    *wal.WAL
 
 		expectedErr error
 	}{
@@ -169,7 +192,7 @@ func TestStorage_Del(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			stor, err := NewStorage(test.engine(), zap.NewNop(), WithWAL(test.wal))
+			stor, err := NewStorage(test.engine(), zap.NewNop())
 			require.NoError(t, err)
 
 			err = stor.Del(context.Background(), "key")
